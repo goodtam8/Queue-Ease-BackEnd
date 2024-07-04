@@ -57,15 +57,11 @@
     </nav>
 
     <br>
+    <div class="row col-sm-6 g-4" id="course">
 
-    <div class="card" id="course" style="width: 18rem;">
-        <div class="card-body">
-            <h5 class="card-title">Card title</h5>
-            <p class="card-text">Some quick example text to build on the card title and make up the bulk of the card's
-                content.</p>
-            <a href="#" class="btn btn-primary">Go somewhere</a>
-        </div>
     </div>
+
+    
 
 
     <nav aria-label="Page navigation example">
@@ -93,6 +89,32 @@
         // return the json
         return json;
     }
+    // a function to render the bookings
+function renderCourses(bookings) {
+    // get the table element
+    const table = document.getElementById('course');
+    // clear the table
+    table.innerHTML = '';
+    // loop over the bookings
+    for (let booking of bookings) {
+        // create a new row
+        // add the booking email to the row
+        table.innerHTML += ` 
+        <div class="col">
+        <div class="card" style="width: 18rem;">
+  <div class="card-body">
+        
+        <h5 class="card-title">${booking._id}</h5>
+    <p class="card-text">Some quick example text to build on the card title and make up the bulk of the card's content.</p>
+    <a href="#" class="btn btn-primary">Go somewhere</a>
+    
+    </div>
+</div>
+</div>`;
+        // add the booking numTickets to the row
+        
+    }
+}
 
     // an async function to render the page
     async function renderPage(page, perPage) {
@@ -101,7 +123,7 @@
         const data = await getCourses(page, perPage);
 
         // render the bookings
-        //await renderBookings(data.bookings);
+        await renderCourses(data.courses);
 
         // render the pagination links
         await renderPagination(data.page, data.perPage, data.total);
