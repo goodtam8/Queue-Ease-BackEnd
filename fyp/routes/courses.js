@@ -47,4 +47,31 @@ router.get('/:id', async function (req, res) {
     }
 });
 
+
+router.get('/', async function (req, res) {
+    const db = await connectToDB();
+    try {
+        let query = {};
+        if (req.query.cid) {
+            // query.email = req.query.email;
+            query.cid = { $regex: req.query.cid };
+        }
+      
+
+        let page = parseInt(req.query.page) || 1;
+        let perPage = parseInt(req.query.perPage) || 6;
+        let skip = (page - 1) * perPage;
+
+        let result = await db.collection("course").find(query).skip(skip).limit(perPage).toArray();
+        let total = await db.collection("course").countDocuments(query);
+
+        res.json({ courses: result, total: total, page: page, perPage: perPage });
+    } catch (err) {
+        res.status(400).json({ message: err.message });
+    }
+    finally {
+        await db.client.close();
+    }
+});
+
   module.exports = router;

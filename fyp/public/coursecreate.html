@@ -62,13 +62,13 @@
             <div class="col">
                 <div class="mb-3">
                     <label for="formGroupExampleInput" class="form-label">CID</label>
-                    <input type="text" class="form-control" id="cid" placeholder="COMP2016" name="cid">
+                    <input type="text" class="form-control" id="cid" placeholder="COMP2016" name="cid" required>
                 </div>
             </div>
             <div class="col">
                 <div class="mb-3">
                     <label for="formGroupExampleInput2" class="form-label">Cname</label>
-                    <input type="text" class="form-control" id="cname" placeholder="Database Management" name="cname">
+                    <input type="text" class="form-control" id="cname" placeholder="Database Management" name="cname" required>
                 </div>
 
             </div>
@@ -122,6 +122,16 @@
 
 <script>
 
+async function comparetime(formdata){
+    const urlParams = new URLSearchParams(formdata);
+    let stime = urlParams.get("start_time")
+    let etime = urlParams.get("end_time")
+    if (etime < stime) {
+    return false 
+    }
+    return true 
+
+}
     
 
     // A function to handle the form submission and display the response
@@ -132,6 +142,13 @@
         // get the id from the url
         // get the form data
         const formData = new FormData(event.target);
+
+        const timecomparison=await comparetime(formData)
+        if(timecomparison===false){
+            alert(JSON.stringify("The end time of the course should be later than the start time "));
+            return
+
+        }
         const duplicatecourse= await getBooking(formData)
         if(duplicatecourse===false){
             alert(JSON.stringify("There are duplicate course with same id"));
