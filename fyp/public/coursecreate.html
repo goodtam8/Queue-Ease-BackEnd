@@ -57,59 +57,59 @@
     </nav>
 
     <br>
-    <form action="/api/course"  method="POST"  >
+    <form onsubmit="handleSubmit(event)">
         <div class="row">
             <div class="col">
                 <div class="mb-3">
                     <label for="formGroupExampleInput" class="form-label">CID</label>
-                    <input type="text" class="form-control" id="cid" placeholder="COMP2016">
+                    <input type="text" class="form-control" id="cid" placeholder="COMP2016" name="cid">
                 </div>
             </div>
             <div class="col">
                 <div class="mb-3">
                     <label for="formGroupExampleInput2" class="form-label">Cname</label>
-                    <input type="text" class="form-control" id="cname" placeholder="Database Management">
+                    <input type="text" class="form-control" id="cname" placeholder="Database Management" name="cname">
                 </div>
 
             </div>
         </div>
         <div class="mb-3">
             <label for="formGroupExampleInput" class="form-label">Start Time</label>
-            <input type="text" class="form-control" id="start_time" placeholder="13:00">
+            <input type="text" class="form-control" id="start_time" placeholder="13:00" name="start_time">
         </div>
         <div class="mb-3">
             <label for="formGroupExampleInput" class="form-label">End Time</label>
-            <input type="text" class="form-control" id="end_time" placeholder="16:00">
+            <input type="text" class="form-control" id="end_time" placeholder="16:00" name="end_time">
         </div>
         <div class="mb-3">
             <label for="formGroupExampleInput" class="form-label">Day</label>
-            <input type="text" class="form-control" id="week_day" placeholder="Monday">
+            <input type="text" class="form-control" id="week_day" placeholder="Monday" name="week_day">
         </div>
         <div class="row">
             <div class="col">
                 <div class="mb-3">
                     <label for="formGroupExampleInput" class="form-label">Semester</label>
-                    <input type="number" class="form-control" id="semester" placeholder="1" name="semester">
+                    <input type="number" class="form-control" id="semester" placeholder="1" name="semester" min="1" max="2">
                 </div>
             </div>
             <div class="col">
                 <div class="mb-3">
                     <label for="formGroupExampleInput2" class="form-label">Quota</label>
-                    <input type="number" class="form-control" id="quota" placeholder="30">
+                    <input type="number" class="form-control" id="quota" placeholder="30" name="quota" min="10" max="50">
                 </div>
 
             </div>
             <div class="col">
                 <div class="mb-3">
                     <label for="formGroupExampleInput2" class="form-label">Year</label>
-                    <input type="text" class="form-control" id="year" placeholder="2022">
+                    <input type="text" class="form-control" id="year" placeholder="2022" name="year">
                 </div>
 
             </div>
         </div>
         <div class="mb-3">
             <label for="formGroupExampleInput2" class="form-label">Location</label>
-            <input type="text" class="form-control" id="location" placeholder="WLB209f">
+            <input type="text" class="form-control" id="location" placeholder="WLB209f" name="location">
         </div>
 
 
@@ -132,7 +132,12 @@
         // get the id from the url
         // get the form data
         const formData = new FormData(event.target);
-        console.log(formData)
+        const duplicatecourse= await getBooking(formData)
+        if(duplicatecourse===false){
+            alert(JSON.stringify("There are duplicate course with same id"));
+            return
+
+        }
         // update the booking
         const updatedBooking = await updateBooking(formData);
         // display the response
@@ -154,7 +159,21 @@
         // return the json
         return json;
     }
-
+// A function to fetch a booking
+async function getBooking(id) {
+    const urlParams = new URLSearchParams(id);
+    let cid = urlParams.get("cid")
+    // fetch the booking
+    const response = await fetch(`/api/course/${cid}`);
+    // convert the response to json
+    const json = await response.json();
+    // return the json
+   
+    if(json.message){
+        return true 
+    }
+    return false;
+}
 </script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"
     integrity="sha384-HwwvtgBNo3bZJJLYd8oVXjrBZt8cqVSpeBNS5n7C8IVInixGAoxmnlMuBnhbgrkm"
