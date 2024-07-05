@@ -33,6 +33,52 @@ router.post('/', async function (req, res) {
     }
 });
 
+// Specify booking being managed by a user
+router.patch('/:id/teacher', async function (req, res) {
+    const db = await connectToDB();
+    try {
+        let result = await db.collection("course").updateOne({ _id: new ObjectId(req.params.id) },
+            {
+                $set: { manager: new ObjectId(req.user._id) }
+            });
+
+        if (result.modifiedCount > 0) {
+            res.status(200).json({ message: "Course updated" });
+        } else {
+            res.status(404).json({ message: "Course not found" });
+        }
+    } catch (err) {
+        res.status(400).json({ message: err.message });
+    }
+    finally {
+        await db.client.close();
+    }
+});
+
+// Specify booking being managed by a user
+router.patch('/:id/student', async function (req, res) {
+    const db = await connectToDB();
+    try {
+        let result = await db.collection("course").updateOne({ _id: new ObjectId(req.params.id) },
+            {
+                $push: { student_attendance: {}}
+            });
+
+        if (result.modifiedCount > 0) {
+            res.status(200).json({ message: "Course updated" });
+        } else {
+            res.status(404).json({ message: "Course not found" });
+        }
+    } catch (err) {
+        res.status(400).json({ message: err.message });
+    }
+    finally {
+        await db.client.close();
+    }
+});
+
+
+
 // Delete a single course
 router.delete('/:id', async function (req, res) {
     const db = await connectToDB();
