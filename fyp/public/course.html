@@ -107,8 +107,13 @@ function renderCourses(bookings) {
     const table = document.getElementById('course');
     // clear the table
     table.innerHTML = '';
+    let count=0;
     // loop over the bookings
     for (let booking of bookings) {
+        count++;
+        if(count==3){
+    table.innerHTML+=`<br>`
+}
         // create a new row
         // add the booking email to the row
         table.innerHTML += ` 
@@ -123,6 +128,7 @@ function renderCourses(bookings) {
     </div>
 </div>
 </div>`;
+
         // add the booking numTickets to the row
         
     }
