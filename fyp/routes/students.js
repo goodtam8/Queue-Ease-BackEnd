@@ -1,8 +1,17 @@
+var express = require('express');
+var router = express.Router();
+
+const { connectToDB, ObjectId } = require('../utils/db');
+
 // New student
 router.post('/', async function (req, res) {
     const db = await connectToDB();
     try {
-        
+        var myobj = { sid: req.body.sid, mon:["","","","","","","","","",""],tue:["","","","","","","","","",""] 
+            ,wed:["","","","","","","","","",""] ,thur:["","","","","","","","","",""] ,fri:["","","","","","","","","",""] 
+         };
+
+        let timetable=await db.collection("timetable").insertOne(myobj);
 
         let result = await db.collection("student").insertOne(req.body);
         res.status(201).json({ id: result.insertedId });
@@ -49,3 +58,28 @@ router.put('/:id', async function (req, res) {
         await db.client.close();
     }
 });
+router.get('/', async function (req, res) {
+    const db = await connectToDB();
+    try {
+        let query = {};
+      
+
+
+        let page = parseInt(req.query.page) || 1;
+        let perPage = parseInt(req.query.perPage) || 6;
+        let skip = (page - 1) * perPage;
+
+        let result = await db.collection("student").find(query).skip(skip).limit(perPage).toArray();
+        let total = await db.collection("student").countDocuments(query);
+
+        res.json({ student: result, total: total, page: page, perPage: perPage });
+    } catch (err) {
+        res.status(400).json({ message: err.message });
+    }
+    finally {
+        await db.client.close();
+    }
+});
+
+
+module.exports = router;
