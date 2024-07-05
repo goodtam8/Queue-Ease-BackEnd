@@ -65,7 +65,7 @@ router.get('/:id', async function (req, res) {
 
 
 /* Retrieve a single Booking */
-router.get('/course/:id', async function (req, res) {
+router.get('/id/:id', async function (req, res) {
     const db = await connectToDB();
     try {
         let result = await db.collection("course").findOne({ _id: new ObjectId(req.params.id) });
@@ -111,10 +111,9 @@ router.get('/', async function (req, res) {
 router.put('/:id', async function (req, res) {
     const db = await connectToDB();
     try {
-        req.body.numTickets = parseInt(req.body.numTickets);
-        req.body.terms = req.body.terms == "on";
-        req.body.superhero = req.body.superhero || "";
-        req.body.modifiedAt = new Date();
+        req.body.year = parseInt(req.body.year);
+        req.body.semester = parseInt(req.body.semester);
+        req.body.quota = parseInt(req.body.quota);
 
         let result = await db.collection("course").updateOne({ _id: new ObjectId(req.params.id) }, { $set: req.body });
 

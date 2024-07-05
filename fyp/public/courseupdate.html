@@ -133,7 +133,7 @@
 async function handleDelete() {
     // get the id from the url
     const urlParams = new URLSearchParams(window.location.search);
-    let id = urlParams.get("id")
+    let id = urlParams.get("_id")
     // display a confirm box
     if (confirm(`Are you sure you want to delete course ${id}?`)) {
         // delete the booking
@@ -146,10 +146,76 @@ async function handleDelete() {
 }
 
 
+// A function to fetch a booking
+async function getCourse(id) {
+    // fetch the booking
+    const response = await fetch(`/api/course/id/${id}`);
+    // convert the response to json
+    const json = await response.json();
+    // return the json
+    return json;
+}
+// A function to render a course
+function renderCourse(booking) {
+    document.querySelector("#cid").value = booking.cid;
+    document.querySelector("#cname").value = booking.cname;
+    document.querySelector("#start_time").value = booking.start_time;
+    document.querySelector("#end_time").value = booking.end_time;
+    document.querySelector("#week_day").value = booking.week_day;
+    document.querySelector("#semester").value = booking.semester;
+    document.querySelector("#quota").value = booking.quota;
+    document.querySelector("#year").value = booking.year;
+    document.querySelector("#location").value = booking.location;
+
+}
+// A function to render the booking
+async function render() {
+    // get the id from the url
+    const urlParams = new URLSearchParams(window.location.search);
+    let id = urlParams.get("_id")
+    // get the booking
+    const booking = await getCourse(id);
+    // render the booking
+    renderCourse(booking);
+}
+
+render()
+
+// A function to update a booking with www-form-urlencoded data
+async function updateCourse(id, course) {
+    
+    const response = await fetch(`/api/course/${id}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: new URLSearchParams(course)
+    });
+    // convert the response to json
+    const json = await response.json();
+    // return the json
+    return json;
+}
+
+// A function to handle the form submission and display the response
+async function handleSubmit(event) {
+    // prevent the default behaviour
+    event.preventDefault();
+    // get the id from the url
+    const urlParams = new URLSearchParams(window.location.search);
+    let id = urlParams.get("_id")
+    // get the form data
+    const formData = new FormData(event.target);
+    // update the booking
+    const updatecourse = await updateCourse(id, formData);
+    // display the response
+    alert(JSON.stringify(updatecourse));
+}
+
 
 
 // A function to delete a booking
-async function deleteBooking(id) {
+async function deleteCourse(id) {
     // fetch the booking
     const response = await fetch(`/api/course/${id}`, {
         method: 'DELETE'
