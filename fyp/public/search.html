@@ -84,18 +84,18 @@ async function handleSubmit(event) {
     event.preventDefault(); // prevent the default form submission behavior
     const formData = new FormData(event.target);
     let id =new URLSearchParams(formData)
-
+   
         // redirect to the bookings page
         window.location.href = `/search.html?${id}`;
 }
 
 
     const urlParams = new URLSearchParams(window.location.search);
-    renderPage(1, 6)
+    renderPage(1, 6,urlParams)
     // an async function to fetch bookings and metadata from the backend
-    async function getCourses(page, perPage) {
+    async function getCourses(page, perPage,cid) {
         // fetch the bookings
-        const response = await fetch(`/api/course?page=${page}&perPage=${perPage}`);
+        const response = await fetch(`/api/course?${cid}&page=${page}&perPage=${perPage}`);
         // convert the response to json
         const json = await response.json();
         // return the json
@@ -129,10 +129,10 @@ function renderCourses(bookings) {
 }
 
     // an async function to render the page
-    async function renderPage(page, perPage) {
+    async function renderPage(page, perPage,cid) {
 
         // get the bookings data
-        const data = await getCourses(page, perPage);
+        const data = await getCourses(page, perPage,cid);
 
         // render the bookings
         await renderCourses(data.courses);

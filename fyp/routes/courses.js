@@ -38,7 +38,7 @@ router.delete('/:id', async function (req, res) {
     const db = await connectToDB();
     try {
         let result3 = await db.collection("course").findOne({ _id: new ObjectId(req.params.id) });
-        
+
         let result2 = await db.collection("attendance").deleteMany({ cid: result3.cid});
         let result = await db.collection("course").deleteOne({ _id: new ObjectId(req.params.id) });
 
@@ -94,7 +94,6 @@ router.get('/', async function (req, res) {
     try {
         let query = {};
         if (req.query.cid) {
-            // query.email = req.query.email;
             query.cid = { $regex: req.query.cid };
         }
 
