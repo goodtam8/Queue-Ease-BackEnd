@@ -15,10 +15,15 @@ router.post('/', async function (req, res) {
         req.body.year = parseInt(req.body.year);
         req.body.semester = parseInt(req.body.semester);
         req.body.quota = parseInt(req.body.quota);
+        for (let i = 1; i <= 13; i++) {
+
+            var myobj = { cid: req.body.cid, week: i,student_attendance:[{sid:101,attend:false,attend_time:"13:00"},{sid:102,attend:false,attend_time:"14:00"}] };
+
+            let result2 = await db.collection("attendance").insertOne(myobj);
+        }
 
 
 
- 
         let result = await db.collection("course").insertOne(req.body);
         res.status(201).json({ id: result.insertedId });
     } catch (err) {
@@ -26,12 +31,15 @@ router.post('/', async function (req, res) {
     } finally {
         await db.client.close();
     }
-  });
+});
 
 // Delete a single course
 router.delete('/:id', async function (req, res) {
     const db = await connectToDB();
     try {
+        let result3 = await db.collection("course").findOne({ _id: new ObjectId(req.params.id) });
+        
+        let result2 = await db.collection("attendance").deleteMany({ cid: result3.cid});
         let result = await db.collection("course").deleteOne({ _id: new ObjectId(req.params.id) });
 
         if (result.deletedCount > 0) {
@@ -46,13 +54,13 @@ router.delete('/:id', async function (req, res) {
     }
 });
 
-  /* Retrieve a single course by using cid to search */
+/* Retrieve a single course by using cid to search */
 router.get('/:id', async function (req, res) {
     const db = await connectToDB();
     try {
         let result = await db.collection("course").findOne({ cid: req.params.id });
         if (result) {
-            res.json(result);   
+            res.json(result);
         } else {
             res.status(404).json({ message: "Course not found" });
         }
@@ -70,7 +78,7 @@ router.get('/id/:id', async function (req, res) {
     try {
         let result = await db.collection("course").findOne({ _id: new ObjectId(req.params.id) });
         if (result) {
-            res.json(result);   
+            res.json(result);
         } else {
             res.status(404).json({ message: "Course not found" });
         }
@@ -89,7 +97,7 @@ router.get('/', async function (req, res) {
             // query.email = req.query.email;
             query.cid = { $regex: req.query.cid };
         }
-      
+
 
         let page = parseInt(req.query.page) || 1;
         let perPage = parseInt(req.query.perPage) || 6;
@@ -129,4 +137,4 @@ router.put('/:id', async function (req, res) {
     }
 });
 
-  module.exports = router;
+module.exports = router;
