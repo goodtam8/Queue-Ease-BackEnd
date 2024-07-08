@@ -33,94 +33,77 @@ router.post('/', async function (req, res) {
     }
 });
 
-// need to update teachers' time table and check whether there is conflict
-//remarks!!
-router.patch('/:id/:sid/student', async function (req, res) {
-    const db = await connectToDB();
-    try {
-        let result = await db.collection("course").updateOne({ _id: new ObjectId(req.params.id) },
-            {
-                $set: { manager: new ObjectId(req.user._id) }
-            });
 
-        if (result.modifiedCount > 0) {
-            res.status(200).json({ message: "Course updated" });
-        } else {
-            res.status(404).json({ message: "Course not found" });
-        }
-    } catch (err) {
-        res.status(400).json({ message: err.message });
-    }
-    finally {
-        await db.client.close();
-    }
-});
 // need to update teacher' time table and check whether there is conflict
 //remarks!! a user
-router.get('/:id/:staffid/teacher', async function (req, res) {
-    //need to cast the type of variable
+router.patch('/:id/:staffid/teacher', async function (req, res) {
     const db = await connectToDB();
-    const course_time = ["0", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00"]
-
+    const course_time = ["0", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00"];
 
     try {
-        var day
-        var stime
-        var etime
-        var mtime
+        var day;
+        var stime;
+        var etime;
+        var mtime;
         let courseinfo = await db.collection("course").findOne({ _id: new ObjectId(req.params.id) });
-        const date = ["Monday", " Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+        
+        const date = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+        
         for (let i = 0; i < date.length; i++) {
             if (date[i] === courseinfo.week_day) {
-                day = date[i]
+                day = date[i];
                 break;
             }
         }
-        for (let i = 0; i < course_time.length; i++) {
-            if (course_time[i] === courseinfo.start_time) {
-                stime = i
-                mtime = i + 1
+        
+        stime = course_time.indexOf(courseinfo.start_time);
+        mtime = stime + 1;
+        etime = course_time.indexOf(courseinfo.end_time);
+        
+        const cid = courseinfo.cid;
 
-                break
-
-            }
-
-        }
-        for (let i = 0; i < course_time.length; i++) {
-            if (course_time[i] === courseinfo.end_time) {
-                etime = i
-                break
-
-            }
-        }
-
-        let sid = parseInt(req.params.staffid)
+        let sid = parseInt(req.params.staffid);
         var query = { [day + '.' + stime]: "", staff_id: sid, [day + '.' + etime]: "", [day + '.' + mtime]: "" };
-        console.log(query)
+        console.log(query);
+        console.log(stime);
+        console.log(mtime);
+        console.log(etime);
 
-
-        let timetable = await db.collection("timetable").find(query).toArray();//this query ok 
+        let timetable = await db.collection("timetable").find(query).toArray();
+        
         if (timetable.length > 0) {
-            console.log("Result found")
-            res.json(timetable);
-        }
-        if (timetable.length === 0) {
-            console.log("No result found ")
-            res.status(400).json({message:"There is already have a course in the same time slot. Please confirm with the course arrangement"})
-            return;
-        }
+            console.log("Result found");
 
+            let result = await db.collection("timetable").updateOne(query, {
+                $set: {
+                    [day + '.' + stime]: cid,
+                    [day + '.' + mtime]: cid,
+                    [day + '.' + etime]: cid
+                }
+            });
 
+            let courseUpdate = await db.collection("course").updateOne(
+                { _id: new ObjectId(req.params.id) },
+                { $set: { teacher: sid } }
+            );
+            if (courseUpdate.modifiedCount > 0) {
+                res.status(200).json({ message: "Course successfully assigned",results:courseUpdate });
+            } else {
+                res.status(404).json({ message: "Course not found" });
+            }
+            
+        } else {
+            console.log("No result found");
+            let conflict = await db.collection("timetable").findOne({ staff_id: sid });
+            res.status(400).json({ message: `The teacher has conflict with other course` });
+        }
 
     } catch (err) {
         res.status(400).json({ message: err.message });
-    }
-    finally {
+    } finally {
         await db.client.close();
     }
 });
-
-
 
 // need to update student' time table and check whether there is conflict
 //remarks!! a user
