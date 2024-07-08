@@ -35,7 +35,7 @@ router.post('/', async function (req, res) {
 
 // need to update teachers' time table and check whether there is conflict
 //remarks!!
-router.patch('/:id/teacher', async function (req, res) {
+router.patch('/:id/:sid/student', async function (req, res) {
     const db = await connectToDB();
     try {
         let result = await db.collection("course").updateOne({ _id: new ObjectId(req.params.id) },
@@ -60,41 +60,64 @@ router.patch('/:id/teacher', async function (req, res) {
 router.get('/:id/:staffid/teacher', async function (req, res) {
     //need to cast the type of variable
     const db = await connectToDB();
+    const course_time = ["0", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00"]
+
+
     try {
         var day
+        var stime
+        var etime
+        var mtime
         let courseinfo = await db.collection("course").findOne({ _id: new ObjectId(req.params.id) });
-        const date = [ "Monday"," Tuesday", "Wednesday", "Thursday", "Friday","Saturday" ];
-        for (let i = 0; i < date.length; i++){
-            if(date[i]===courseinfo.week_day){
-                day=date[i]
+        const date = ["Monday", " Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+        for (let i = 0; i < date.length; i++) {
+            if (date[i] === courseinfo.week_day) {
+                day = date[i]
                 break;
             }
-            
+        }
+        for (let i = 0; i < course_time.length; i++) {
+            if (course_time[i] === courseinfo.start_time) {
+                stime = i
+                mtime = i + 1
 
-}
-console.log(day);
-let sid=parseInt(req.params.staffid)
-console.log(req.params.staffid);
-//var query = {day:null,staff_id:sid};
+                break
+
+            }
+
+        }
+        for (let i = 0; i < course_time.length; i++) {
+            if (course_time[i] === courseinfo.end_time) {
+                etime = i
+                break
+
+            }
+        }
+
+        let sid = parseInt(req.params.staffid)
+        var query = { [day + '.' + stime]: "", staff_id: sid, [day + '.' + etime]: "", [day + '.' + mtime]: "" };
+        console.log(query)
 
 
-let timetable = await db.collection("timetable").find({'Friday.2':"3"}).toArray();//this query ok 
-if(timetable){
-    res.json(timetable.Friday);
-}
-if (timetable.length === 0) {
-    console.log("No result found ")
-    return;
-}
+        let timetable = await db.collection("timetable").find(query).toArray();//this query ok 
+        if (timetable.length > 0) {
+            console.log("Result found")
+            res.json(timetable);
+        }
+        if (timetable.length === 0) {
+            console.log("No result found ")
+            res.status(400).json({message:"There is already have a course in the same time slot. Please confirm with the course arrangement"})
+            return;
+        }
 
 
-        
+
     } catch (err) {
-    res.status(400).json({ message: err.message });
-}
-finally {
-    await db.client.close();
-}
+        res.status(400).json({ message: err.message });
+    }
+    finally {
+        await db.client.close();
+    }
 });
 
 
@@ -125,6 +148,7 @@ router.patch('/:id/student', async function (req, res) {
 
 
 // Delete a single course
+//also have to update student/teacher time tabe ***remark***
 router.delete('/:id', async function (req, res) {
     const db = await connectToDB();
     try {
@@ -221,7 +245,8 @@ router.get('/', async function (req, res) {
     }
 });
 
-// Update a single Booking
+// Update a single course
+//remarks the time of the course should not be updated***
 router.put('/:id', async function (req, res) {
     const db = await connectToDB();
     try {
