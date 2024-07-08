@@ -7,7 +7,7 @@ const { connectToDB, ObjectId } = require('../utils/db');
 
 
 
-// New Booking
+// New course
 router.post('/', async function (req, res) {
     const db = await connectToDB();
     try {
@@ -34,8 +34,7 @@ router.post('/', async function (req, res) {
 });
 
 
-// need to update teacher' time table and check whether there is conflict
-//remarks!! a user
+//assign course to teacher
 router.patch('/:id/:staffid/teacher', async function (req, res) {
     const db = await connectToDB();
     const course_time = ["0", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00"];
@@ -170,7 +169,7 @@ router.get('/:id', async function (req, res) {
 });
 
 
-/* Retrieve a single Booking */
+/* Retrieve a single course */
 router.get('/id/:id', async function (req, res) {
     const db = await connectToDB();
     try {
@@ -187,6 +186,7 @@ router.get('/id/:id', async function (req, res) {
     }
 });
 
+//get all the course without pagination 
 router.get('/all', async function (req, res) {
     const db = await connectToDB();
     try {
@@ -203,6 +203,7 @@ router.get('/all', async function (req, res) {
     }
 });
 
+//get the courses back 
 router.get('/', async function (req, res) {
     const db = await connectToDB();
     try {
@@ -233,9 +234,7 @@ router.get('/', async function (req, res) {
 router.put('/:id', async function (req, res) {
     const db = await connectToDB();
     try {
-        req.body.year = parseInt(req.body.year);
-        req.body.semester = parseInt(req.body.semester);
-        req.body.quota = parseInt(req.body.quota);
+       
 
         let result = await db.collection("course").updateOne({ _id: new ObjectId(req.params.id) }, { $set: req.body });
 

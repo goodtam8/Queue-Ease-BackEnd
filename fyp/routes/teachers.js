@@ -7,11 +7,12 @@ const { connectToDB, ObjectId } = require('../utils/db');
 router.post('/', async function (req, res) {
     const db = await connectToDB();
     try {
-        var myobj = { staff_id: req.body.staff_id, mon:["","","","","","","","","",""],tue:["","","","","","","","","",""] 
-            ,wed:["","","","","","","","","",""] ,thur:["","","","","","","","","",""] ,fri:["","","","","","","","","",""] 
-         };
+        var myobj = {
+            staff_id: req.body.staff_id, mon: ["", "", "", "", "", "", "", "", "", ""], tue: ["", "", "", "", "", "", "", "", "", ""]
+            , wed: ["", "", "", "", "", "", "", "", "", ""], thur: ["", "", "", "", "", "", "", "", "", ""], fri: ["", "", "", "", "", "", "", "", "", ""]
+        };
 
-        let timetable=await db.collection("timetable").insertOne(myobj);
+        let timetable = await db.collection("timetable").insertOne(myobj);
 
         let result = await db.collection("teacher").insertOne(req.body);
         res.status(201).json({ id: result.insertedId });
@@ -28,7 +29,28 @@ router.get('/:id', async function (req, res) {
     try {
         let result = await db.collection("teacher").findOne({ _id: new ObjectId(req.params.id) });
         if (result) {
-            res.json(result);   
+            res.json(result);
+        } else {
+            res.status(404).json({ message: "Teacher not found" });
+        }
+    } catch (err) {
+        res.status(400).json({ message: err.message });
+    } finally {
+        await db.client.close();
+    }
+});
+
+/* Retrieve a single teacher and with his/her time table */
+router.get('/:id/timetable', async function (req, res) {
+    const db = await connectToDB();
+    try {
+        let result = await db.collection("teacher").findOne({ _id: new ObjectId(req.params.id) });
+        if (result) {
+            let timetable = await db.collection("timetable").findOne({staff_id:result.staff_id})
+            res.json(timetable);
+
+
+
         } else {
             res.status(404).json({ message: "Teacher not found" });
         }
@@ -43,7 +65,7 @@ router.get('/:id', async function (req, res) {
 router.put('/:id', async function (req, res) {
     const db = await connectToDB();
     try {
-       
+
 
         let result = await db.collection("teacher").updateOne({ _id: new ObjectId(req.params.id) }, { $set: req.body });
 
@@ -63,7 +85,7 @@ router.get('/', async function (req, res) {
     const db = await connectToDB();
     try {
         let query = {};
-       
+
         let page = parseInt(req.query.page) || 1;
         let perPage = parseInt(req.query.perPage) || 6;
         let skip = (page - 1) * perPage;
