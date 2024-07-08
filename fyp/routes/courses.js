@@ -17,7 +17,7 @@ router.post('/', async function (req, res) {
         req.body.quota = parseInt(req.body.quota);
         for (let i = 1; i <= 13; i++) {
 
-            var myobj = { cid: req.body.cid, week: i,student_attendance:[{sid:101,attend:false,attend_time:"13:00"},{sid:102,attend:false,attend_time:"14:00"}] };
+            var myobj = { cid: req.body.cid, week: i, student_attendance: [{ sid: 101, attend: false, attend_time: "13:00" }, { sid: 102, attend: false, attend_time: "14:00" }] };
 
             let result2 = await db.collection("attendance").insertOne(myobj);
         }
@@ -33,7 +33,8 @@ router.post('/', async function (req, res) {
     }
 });
 
-// Specify booking being managed by a user
+// need to update teachers' time table and check whether there is conflict
+//remarks!!
 router.patch('/:id/teacher', async function (req, res) {
     const db = await connectToDB();
     try {
@@ -54,14 +55,58 @@ router.patch('/:id/teacher', async function (req, res) {
         await db.client.close();
     }
 });
+// need to update teacher' time table and check whether there is conflict
+//remarks!! a user
+router.get('/:id/:staffid/teacher', async function (req, res) {
+    //need to cast the type of variable
+    const db = await connectToDB();
+    try {
+        var day
+        let courseinfo = await db.collection("course").findOne({ _id: new ObjectId(req.params.id) });
+        const date = [ "Monday"," Tuesday", "Wednesday", "Thursday", "Friday","Saturday" ];
+        for (let i = 0; i < date.length; i++){
+            if(date[i]===courseinfo.week_day){
+                day=date[i]
+                break;
+            }
+            
 
-// Specify booking being managed by a user
+}
+console.log(day);
+let sid=parseInt(req.params.staffid)
+console.log(req.params.staffid);
+//var query = {day:null,staff_id:sid};
+
+
+let timetable = await db.collection("timetable").find({'Friday.2':"3"}).toArray();//this query ok 
+if(timetable){
+    res.json(timetable.Friday);
+}
+if (timetable.length === 0) {
+    console.log("No result found ")
+    return;
+}
+
+
+        
+    } catch (err) {
+    res.status(400).json({ message: err.message });
+}
+finally {
+    await db.client.close();
+}
+});
+
+
+
+// need to update student' time table and check whether there is conflict
+//remarks!! a user
 router.patch('/:id/student', async function (req, res) {
     const db = await connectToDB();
     try {
         let result = await db.collection("course").updateOne({ _id: new ObjectId(req.params.id) },
             {
-                $push: { student_attendance: {}}
+                $push: { student_attendance: {} }
             });
 
         if (result.modifiedCount > 0) {
@@ -85,7 +130,7 @@ router.delete('/:id', async function (req, res) {
     try {
         let result3 = await db.collection("course").findOne({ _id: new ObjectId(req.params.id) });
 
-        let result2 = await db.collection("attendance").deleteMany({ cid: result3.cid});
+        let result2 = await db.collection("attendance").deleteMany({ cid: result3.cid });// the assign course need this field
         let result = await db.collection("course").deleteOne({ _id: new ObjectId(req.params.id) });
 
         if (result.deletedCount > 0) {
@@ -131,6 +176,22 @@ router.get('/id/:id', async function (req, res) {
     } catch (err) {
         res.status(400).json({ message: err.message });
     } finally {
+        await db.client.close();
+    }
+});
+
+router.get('/all', async function (req, res) {
+    const db = await connectToDB();
+    try {
+
+
+        let result = await db.collection("course")
+
+        res.json({ courses: result, total: total, page: page, perPage: perPage });
+    } catch (err) {
+        res.status(400).json({ message: err.message });
+    }
+    finally {
         await db.client.close();
     }
 });
