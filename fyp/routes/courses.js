@@ -10,8 +10,7 @@ const { connectToDB, ObjectId } = require('../utils/db');
 // New course
 router.post('/', async function (req, res) {
     const db = await connectToDB();
-    monitorListingsUsingHasNext();
-    console.log("End monitioring")
+   
     try {
 
         req.body.year = parseInt(req.body.year);
@@ -313,38 +312,6 @@ router.put('/:id', async function (req, res) {
         await db.client.close();
     }
 });
-
-
-async function monitorListingsUsingHasNext() {
-    const db=await connectToDB();
-
-    const collection =db.collection("course");
-    let pipeline=[]
-    console.log("start monitoring")
-
-    // See https://mongodb.github.io/node-mongodb-native/3.6/api/Collection.html#watch for the watch() docs
-    const changeStream = collection.watch( [
-        { $match: { "operationType": { $in: ["insert", "update", "replace"] } } },
-        { $project: { "_id": 1, "fullDocument": 1, "ns": 1, "documentKey": 1 } }
-    ],
-    { fullDocument: "updateLookup" });
-
-    // Set a timer that will close the change stream after the given amount of time
-    // Function execution will continue because we are not using "await" here
-
-    // We can use ChangeStream's hasNext() function to wait for a new change in the change stream.
-    // See https://mongodb.github.io/node-mongodb-native/3.6/api/ChangeStream.html for the ChangeStream docs.
-    try {
-        while (await changeStream.hasNext()) {
-            console.log(await changeStream.next());
-            //res.json(fullDocument)
-        }
-    } catch (error) {
-       
-            throw error;
-        }
-    }
-
 
 
 
