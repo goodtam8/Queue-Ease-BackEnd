@@ -1,6 +1,6 @@
 var express = require('express');
 var router = express.Router();
-
+const stream=require('stream');
 const { connectToDB, ObjectId } = require('../utils/db');
 
 // routes
@@ -32,8 +32,6 @@ router.post('/', async function (req, res) {
         await db.client.close();
     }
 });
-
-
 //assign course to teacher
 router.patch('/:id/:staffid/teacher', async function (req, res) {
     const db = await connectToDB();
@@ -164,8 +162,10 @@ router.patch('/:id/:sid/student', async function (req, res) {
 
             let courseUpdate = await db.collection("course").updateOne(
                 { _id: new ObjectId(req.params.id) },
-                { $push: { student_attendance: [sid] } },
-                { $set: { quota: courseinfo.quota - 1 } }
+                { 
+                    $pull: { student_attendance: sid },
+                    $set: { quota: courseinfo.quota-1 }
+                }
             );
             if (courseUpdate.modifiedCount > 0) {
                 res.status(200).json({ message: "Course successfully assigned", results: courseUpdate });
@@ -311,5 +311,13 @@ router.put('/:id', async function (req, res) {
         await db.client.close();
     }
 });
+
+
+async function monitorCourseUsingStreamAPI(pipeline=[]){
+
+
+
+
+}
 
 module.exports = router;
