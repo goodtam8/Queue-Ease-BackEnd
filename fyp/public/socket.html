@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Real-time Updates</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+
+    socket.on('db update', function (change) {
+
+      console.log('Database update:' ,change);
+      socket.emit('eventFromClient',change)
+      // Handle the change data, update the DOM, etc.
+    });
+
+    socket.on('connect', function() {
+    console.log('Connected to server');
+});
+  </script>
+</head>
+<body>
+  <h1>Real-time Updates</h1>
+</body>
+</html>

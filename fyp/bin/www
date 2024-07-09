@@ -7,6 +7,8 @@
 var app = require('../app');
 var debug = require('debug')('fyp:server');
 var http = require('http');
+var socketIo=require('socket.io');
+
 
 /**
  * Get port from environment and store in Express.
@@ -21,13 +23,14 @@ app.set('port', port);
  */
 
 var server = http.createServer(app);
+const io=socketIo(server);
 
 /**
  * Listen on provided port, on all network interfaces.
  */
 
 server.listen(port,()=>{
-monitorChanges();
+monitorChanges(io);
 
 });
 server.on('error', onError);
@@ -53,10 +56,30 @@ function normalizePort(val) {
   return false;
 }
 
+// Socket.IO connection event
+io.on('connection', (socket) => {
+  console.log('A user connected');
+
+// Handle events from the client
+socket.on('eventFromClient', (data) => {
+  console.log('Received data from client:', data);
+  // Broadcast the data to all connected clients
+  io.emit('eventFromServer',"toooo");
+  });
+  socket.on('connect',()=>{
+    io.emit('connectwithyou',"yo")
+  })
+
+  
+  // Handle disconnection
+  socket.on('disconnect', () => {
+  console.log('A user disconnected');
+  });
+});
 
 
-// changing streams
-async function monitorChanges() {
+
+async function monitorChanges(io) {
   const db = await connectToDB();
   const collection = db.collection("course");
   const changeStream = collection.watch([
@@ -66,14 +89,16 @@ async function monitorChanges() {
 
   console.log("start monitoring");
 
-  try {
-    while (await changeStream.hasNext()) {
-      console.log(await changeStream.next());
-    }
-  } catch (error) {
-    console.error(error);
-  }
+  changeStream.on('change', async (change) => {
+    io.emit('db update', change);
+    console.log(" I sent it out already")
+  });
+
+  changeStream.on('error', (error) => {
+    console.error('Change stream error:', error);
+  });
 }
+
 
 /**
  * Event listener for HTTP server "error" event.
