@@ -7,8 +7,8 @@ const { connectToDB, ObjectId } = require('../utils/db');
 router.post('/', async function (req, res) {
     const db = await connectToDB();
     try {
-        var myobj = { sid: req.body.sid, mon:["","","","","","","","","","",""],tue:["","","","","","","","","","",""] 
-            ,wed:["","","","","","","","","","",""] ,thur:["","","","","","","","","","",""] ,fri:["","","","","","","","","","",""] 
+        var myobj = { sid: req.body.sid, Monday:["","","","","","","","","","",""],Tuesday:["","","","","","","","","","",""] 
+            ,Wednesday:["","","","","","","","","","",""] ,Thursday:["","","","","","","","","","",""] ,Friday:["","","","","","","","","","",""] 
          };
 
         let timetable=await db.collection("timetable").insertOne(myobj);
