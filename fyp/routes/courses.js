@@ -197,6 +197,35 @@ router.patch('/:id/:sid/student', async function (req, res) {
 router.delete('/:id', async function (req, res) {
     const db = await connectToDB();
     try {
+        const db = await connectToDB();
+        const course_time = ["0", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00"];
+    
+            var day;
+            var stime;
+            var etime;
+            var mtime;
+            let courseinfo = await db.collection("course").findOne({ _id: new ObjectId(req.params.id) });
+    
+            const date = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    
+            for (let i = 0; i < date.length; i++) {
+                if (date[i] === courseinfo.week_day) {
+                    day = date[i];
+                    break;
+                }
+            }
+    
+            stime = course_time.indexOf(courseinfo.start_time);
+            mtime = stime + 1;
+            etime = course_time.indexOf(courseinfo.end_time)    
+            var query = { [day + '.' + stime]: courseinfo.cid,  [day + '.' + etime]: courseinfo.cid, [day + '.' + mtime]: courseinfo.cid };
+            let updatetime = await db.collection("timetable").updateMany(query, {
+                $set: {
+                    [day + '.' + stime]: "",
+                    [day + '.' + mtime]: "",
+                    [day + '.' + etime]: ""
+                }
+            });
         let result3 = await db.collection("course").findOne({ _id: new ObjectId(req.params.id) });
         let result2 = await db.collection("attendance").deleteMany({ cid: result3.cid });// the assign course need this field
         let result = await db.collection("course").deleteOne({ _id: new ObjectId(req.params.id) });
