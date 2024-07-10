@@ -198,10 +198,8 @@ router.delete('/:id', async function (req, res) {
     const db = await connectToDB();
     try {
         let result3 = await db.collection("course").findOne({ _id: new ObjectId(req.params.id) });
-
         let result2 = await db.collection("attendance").deleteMany({ cid: result3.cid });// the assign course need this field
         let result = await db.collection("course").deleteOne({ _id: new ObjectId(req.params.id) });
-
         if (result.deletedCount > 0) {
             res.status(200).json({ message: "Course deleted" });
         } else {

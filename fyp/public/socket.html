@@ -8,8 +8,8 @@
 
     socket.on('db update', function (change) {
 
-      console.log('Database update:' ,change);
-      socket.emit('eventFromClient',change)
+      console.log('Database update:' ,change.cid);
+      socket.emit('eventFromClient',change.cid)
       // Handle the change data, update the DOM, etc.
     });
 

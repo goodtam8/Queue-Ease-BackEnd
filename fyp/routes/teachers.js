@@ -102,4 +102,65 @@ router.get('/', async function (req, res) {
     }
 });
 
+router.patch('/:sid/:cid/drop',async function(req,res){
+    const db = await connectToDB();
+    const course_time = ["0", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00"];
+
+    try{
+        var day;
+        var stime;
+        var etime;
+        var mtime;
+        let courseinfo = await db.collection("course").findOne({ cid: req.params.cid });//first get back the result 
+
+        const date = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+        for (let i = 0; i < date.length; i++) {
+            if (date[i] === courseinfo.week_day) {
+                day = date[i];
+                break;
+            }
+        }
+
+        stime = course_time.indexOf(courseinfo.start_time);
+        mtime = stime + 1;
+        etime = course_time.indexOf(courseinfo.end_time);
+
+        const cid = courseinfo.cid;
+        const quot=courseinfo.quota+1;
+
+        let sid = parseInt(req.params.sid);
+        var query = { [day + '.' + stime]: courseinfo.cid, staff_id: sid, [day + '.' + etime]: courseinfo.cid, [day + '.' + mtime]: courseinfo.cid };
+        console.log(query)
+
+        let result = await db.collection("timetable").updateOne(query, {
+            $set: {
+                [day + '.' + stime]: "",
+                [day + '.' + mtime]: "",
+                [day + '.' + etime]: ""
+            }
+        });
+        console.log(result)
+        let courseUpdate = await db.collection("course").updateOne(
+            { _id: new ObjectId(courseinfo._id) },
+            { 
+               
+                $set: { teacher:null }
+            }
+        );
+
+        res.json({result:result,courseUpdate:courseUpdate})
+    }
+    catch (err) {
+        res.status(400).json({ message: err.message });
+    } finally {
+        await db.client.close();
+    }
+
+
+
+})
+
+
+
 module.exports = router;

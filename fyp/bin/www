@@ -90,8 +90,8 @@ async function monitorChanges(io) {
   console.log("start monitoring");
 
   changeStream.on('change', async (change) => {
-    io.emit('db update', change);
-    console.log(" I sent it out already")
+    io.emit('db update', change);//what id going to be change 
+    console.log(change)
   });
 
   changeStream.on('error', (error) => {
