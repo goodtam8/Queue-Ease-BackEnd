@@ -58,11 +58,12 @@ function normalizePort(val) {
 
 // Socket.IO connection event
 io.on('connection', (socket) => {
-  console.log('A user connected');
+  console.log('A user connected',socket.id);
 
 // Handle events from the client
 socket.on('eventFromClient', (data) => {
-  console.log('Received data from client:', data);
+  
+  console.log('Received data from client:',data);
   // Broadcast the data to all connected clients
   io.emit('eventFromServer',"toooo");
   });
@@ -90,8 +91,7 @@ async function monitorChanges(io) {
   console.log("start monitoring");
 
   changeStream.on('change', async (change) => {
-    io.emit('db update', change);//what id going to be change 
-    console.log(change)
+    io.emit('db update', change.fullDocument);
   });
 
   changeStream.on('error', (error) => {

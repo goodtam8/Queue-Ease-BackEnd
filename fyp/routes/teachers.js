@@ -131,6 +131,12 @@ router.patch('/:sid/:cid/drop',async function(req,res){
 
         let sid = parseInt(req.params.sid);
         var query = { [day + '.' + stime]: courseinfo.cid, staff_id: sid, [day + '.' + etime]: courseinfo.cid, [day + '.' + mtime]: courseinfo.cid };
+        let verify= await db.collection("timetable").findOne(query)
+        if(!verify){
+            res.status(400).json({ message:"No result found" });
+            return;
+
+        }
         console.log(query)
 
         let result = await db.collection("timetable").updateOne(query, {
