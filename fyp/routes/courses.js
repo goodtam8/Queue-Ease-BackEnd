@@ -340,6 +340,23 @@ router.put('/:id', async function (req, res) {
     }
 });
 
+router.patch('/:cid/:week',async function(req,res){
+    const db = await connectToDB();
+    let lesson=parseInt(req.params.week)
+let query= { cid: req.params.cid, week:lesson };
+
+let attendance_update = await db.collection("attendance").updateOne(
+    query,
+    { 
+        $set: { status:"cancel"  }
+    }
+);
+if (attendance_update.modifiedCount > 0) {
+    res.status(200).json({ message: "Attendance successfully cancelled", results: attendance_update });
+} else {
+    res.status(404).json({ message: "Attendance not found" });
+}
+})
 
 
 module.exports = router;
