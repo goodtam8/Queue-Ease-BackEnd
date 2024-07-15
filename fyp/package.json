@@ -13,6 +13,8 @@
     "http-errors": "~1.6.3",
     "mongodb": "^6.7.0",
     "morgan": "~1.9.1",
+    "passport": "^0.7.0",
+    "passport-http-bearer": "^1.0.1",
     "socket.io": "^4.7.5"
   }
 }

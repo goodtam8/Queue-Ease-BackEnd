@@ -3,7 +3,17 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
-
+var jwt = require('jsonwebtoken');
+var passport = require('passport');
+var BearerStrategy = require('passport-http-bearer').Strategy;
+passport.use(new BearerStrategy(
+  function (token, done) {
+    jwt.verify(token, process.env.TOKEN_SECRET, function (err, decoded) {
+      if (err) { return done(err); }
+      return done(null, decoded, { scope: "all" });
+    });
+  }
+));
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 var coursesRouter = require('./routes/courses'); // around line 9
@@ -25,8 +35,7 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
-app.use('/users', usersRouter);
-app.use('/api/course', coursesRouter); // around line 25
+app.use('/api/users', passport.authenticate('bearer', { session: false }), usersRouter);app.use('/api/course', coursesRouter); // around line 25
 app.use('/api/teacher', teacherRouter); // around line 25
 app.use('/api/student', studentRouter); // around line 25
 app.use('/api/annou',announcementRouter);
