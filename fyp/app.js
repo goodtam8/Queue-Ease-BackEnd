@@ -12,6 +12,7 @@ var studentRouter = require('./routes/students'); // around line 9
 var announcementRouter = require('./routes/announcement'); // around line 9
 var leaveRouter=require('./routes/leave');
 var app = express();
+process.env.TOKEN_SECRET = 'secret';
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));

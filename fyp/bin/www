@@ -82,7 +82,7 @@ socket.on('eventFromClient', (data) => {
 
 async function monitorChanges(io) {
   const db = await connectToDB();
-  const collection = db.collection("announcement");
+  const collection = db.collection("course");
   const changeStream = collection.watch([
     { $match: { "operationType": { $in: ["insert", "update", "replace"] } } },
     { $project: { "_id": 1, "fullDocument": 1, "ns": 1, "documentKey": 1 } }
