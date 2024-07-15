@@ -21,7 +21,10 @@ router.get('/', async function (req, res) {
     const db = await connectToDB();
     try {
         let query = {};
-     
+        if (req.query.status) {
+            // query.email = req.query.email;
+            query.status = { $regex: req.query.status };
+        }
         let page = parseInt(req.query.page) || 1;
         let perPage = parseInt(req.query.perPage) || 10;
         let skip = (page - 1) * perPage;
