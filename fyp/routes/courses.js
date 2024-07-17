@@ -10,7 +10,7 @@ var passport = require('passport');
 
 
 // New course
-router.post('/', async function (req, res) {
+router.post('/',  passport.authenticate('bearer', { session: false }),async function (req, res) {
     const db = await connectToDB();
    
     try {

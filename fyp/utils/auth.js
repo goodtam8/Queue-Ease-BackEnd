@@ -16,7 +16,7 @@ const isRay = function (req, res, next) {
   }
 
   next();
-}Ï
+}
 
 module.exports = { generateToken, isRay };
 
