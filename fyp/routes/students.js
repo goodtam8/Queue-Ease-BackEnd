@@ -10,9 +10,7 @@ router.post('/', async function (req, res) {
         var myobj = { sid: req.body.sid, Monday:["","","","","","","","","","",""],Tuesday:["","","","","","","","","","",""] 
             ,Wednesday:["","","","","","","","","","",""] ,Thursday:["","","","","","","","","","",""] ,Friday:["","","","","","","","","","",""] 
          };
-
         let timetable=await db.collection("timetable").insertOne(myobj);
-
         let result = await db.collection("student").insertOne(req.body);
         res.status(201).json({ id: result.insertedId });
     } catch (err) {
@@ -43,10 +41,7 @@ router.get('/:id', async function (req, res) {
 router.put('/:id', async function (req, res) {
     const db = await connectToDB();
     try {
-      
-
         let result = await db.collection("student").updateOne({ _id: new ObjectId(req.params.id) }, { $set: req.body });
-
         if (result.modifiedCount > 0) {
             res.status(200).json({ message: "Student updated" });
         } else {
@@ -62,16 +57,11 @@ router.get('/', async function (req, res) {
     const db = await connectToDB();
     try {
         let query = {};
-      
-
-
         let page = parseInt(req.query.page) || 1;
         let perPage = parseInt(req.query.perPage) || 6;
         let skip = (page - 1) * perPage;
-
         let result = await db.collection("student").find(query).skip(skip).limit(perPage).toArray();
         let total = await db.collection("student").countDocuments(query);
-
         res.json({ student: result, total: total, page: page, perPage: perPage });
     } catch (err) {
         res.status(400).json({ message: err.message });
@@ -88,9 +78,6 @@ router.get('/:id/timetable', async function (req, res) {
         if (result) {
             let timetable = await db.collection("timetable").findOne({sid:result.sid})
             res.json(timetable);
-
-
-
         } else {
             res.status(404).json({ message: "Teacher not found" });
         }
@@ -100,7 +87,7 @@ router.get('/:id/timetable', async function (req, res) {
         await db.client.close();
     }
 });
-
+//dropping a course from a student
 router.patch('/:sid/:cid/drop',async function(req,res){
     const db = await connectToDB();
     const course_time = ["0", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00"];
@@ -111,9 +98,7 @@ router.patch('/:sid/:cid/drop',async function(req,res){
         var etime;
         var mtime;
         let courseinfo = await db.collection("course").findOne({ cid: req.params.cid });//first get back the result 
-
         const date = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-
         for (let i = 0; i < date.length; i++) {
             if (date[i] === courseinfo.week_day) {
                 day = date[i];
@@ -124,7 +109,6 @@ router.patch('/:sid/:cid/drop',async function(req,res){
         stime = course_time.indexOf(courseinfo.start_time);
         mtime = stime + 1;
         etime = course_time.indexOf(courseinfo.end_time);
-
         const cid = courseinfo.cid;
         const quot=courseinfo.quota+1;
 
@@ -155,9 +139,6 @@ router.patch('/:sid/:cid/drop',async function(req,res){
     } finally {
         await db.client.close();
     }
-
-
-
 })
 
 module.exports = router;

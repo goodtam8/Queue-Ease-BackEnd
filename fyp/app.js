@@ -20,6 +20,8 @@ var coursesRouter = require('./routes/courses'); // around line 9
 var teacherRouter = require('./routes/teachers'); // around line 9
 var studentRouter = require('./routes/students'); // around line 9
 var announcementRouter = require('./routes/announcement'); // around line 9
+var assignRouter = require('./routes/assign'); // around line 9
+
 var leaveRouter=require('./routes/leave');
 var app = express();
 process.env.TOKEN_SECRET = 'secret';
@@ -40,6 +42,8 @@ app.use('/api/teacher', teacherRouter); // around line 25
 app.use('/api/student', studentRouter); // around line 25
 app.use('/api/annou',announcementRouter);
 app.use('/api/leave',leaveRouter);
+app.use('/api/assign',assignRouter);
+
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
