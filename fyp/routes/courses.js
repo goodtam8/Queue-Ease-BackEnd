@@ -132,6 +132,10 @@ router.get('/', async function (req, res) {
     const db = await connectToDB();
     try {
         let query = {};
+        if (req.query.cid) {
+            // query.email = req.query.email;
+            query.cid = { $regex: req.query.cid };
+        }
         
 
         let page = parseInt(req.query.page) || 1;
