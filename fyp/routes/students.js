@@ -57,12 +57,19 @@ router.put('/:id', async function (req, res) {
 //handle search and return all students
 router.get('/', async function (req, res) {
     const db = await connectToDB();
+    db.collection("student").createIndex( { "$**" : 1 } )
+    db.collection("student").createIndex( { "$**" : -1 } )
+
+
     try {
         let query = {};
+        // sort by sort_by query parameter
+let sort = {'name':1};
+
         let page = parseInt(req.query.page) || 1;
         let perPage = parseInt(req.query.perPage) || 6;
         let skip = (page - 1) * perPage;
-        let result = await db.collection("student").find(query).skip(skip).limit(perPage).toArray();
+        let result = await db.collection("student").find(query).sort(sort).skip(skip).limit(perPage).toArray();
         let total = await db.collection("student").countDocuments(query);
         res.json({ student: result, total: total, page: page, perPage: perPage });
     } catch (err) {
