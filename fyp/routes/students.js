@@ -39,6 +39,7 @@ router.get('/:id', async function (req, res) {
 
 // Update a single student
 router.put('/:id', async function (req, res) {
+    delete req.body._id
     const db = await connectToDB();
     try {
         let result = await db.collection("student").updateOne({ _id: new ObjectId(req.params.id) }, { $set: req.body });
@@ -160,5 +161,28 @@ router.patch('/:sid/:cid/drop',async function(req,res){
         await db.client.close();
     }
 })
+
+
+/* Retrieve a single student and with his/her course */
+router.get('/:id/get', async function (req, res) {
+    const db = await connectToDB();
+    try {
+        let result = await db.collection("student").findOne({ _id: new ObjectId(req.params.id) });
+        if (result) {
+            const course = await db.collection("course").find({ student_list: { $elemMatch: { $eq:result.sid } } }).toArray();
+            res.json(course);
+
+
+
+        } else {
+            res.status(404).json({ message: "Student not found" });
+        }
+    } catch (err) {
+        res.status(400).json({ message: err.message });
+    } finally {
+        await db.client.close();
+    }
+});
+
 
 module.exports = router;
