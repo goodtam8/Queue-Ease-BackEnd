@@ -155,6 +155,10 @@ router.get('/cs/all/:id', async function (req, res) {
 
 router.get('/', async function (req, res) {
     const db = await connectToDB();
+    db.collection("course").createIndex( { "$**" : 1 } )
+    db.collection("course").createIndex( { "$**" : -1 } )
+    let sort = {'cid':1};
+
     try {
         let query = {};
         if (req.query.cid) {
@@ -167,7 +171,7 @@ router.get('/', async function (req, res) {
         let perPage = parseInt(req.query.perPage) || 6;
         let skip = (page - 1) * perPage;
 
-        let result = await db.collection("course").find(query).skip(skip).limit(perPage).toArray();
+        let result = await db.collection("course").find(query).sort(sort).skip(skip).limit(perPage).toArray();
         let total = await db.collection("course").countDocuments(query);
 
         res.json({ courses: result, total: total, page: page, perPage: perPage });
