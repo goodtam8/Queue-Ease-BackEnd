@@ -134,7 +134,7 @@ router.patch('/:id/:sid/student', async function (req, res) {
             let courseUpdate = await db.collection("course").updateOne(
                 { _id: new ObjectId(req.params.id) },
                 {
-                    $pull: { student_attendance: sid },
+                    $push: { student_list: sid },
                     $set: { quota: courseinfo.quota - 1 }
                 }
             );

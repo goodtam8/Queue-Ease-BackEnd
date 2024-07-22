@@ -92,6 +92,7 @@ router.put('/:id', async function (req, res) {
     }
 });
 
+//cancel course if there is some sudden situation occur
 router.patch('/:cid/:week', async function (req, res) {
     const db = await connectToDB();
     let lesson = parseInt(req.params.week)
@@ -127,6 +128,30 @@ router.get('/cs/all', async function (req, res) {
         await db.client.close();
     }
 });
+
+
+//get all the course without pagination 
+router.get('/cs/all/:id', async function (req, res) {
+    const db = await connectToDB();
+    try {
+        console.log("hi");
+        let query = {};
+        let staff_id=parseInt(req.params.id);
+        let teacher = await db.collection("teacher").findOne({ _id: new ObjectId(req.params.id) });
+
+
+
+        const result = await db.collection("course").find({ teacher: { $ne:teacher.staff_id} }).toArray();
+
+        res.json({ courses: result });
+    } catch (err) {
+        res.status(400).json({ message: err.message });
+    }
+    finally {
+        await db.client.close();
+    }
+});
+
 
 router.get('/', async function (req, res) {
     const db = await connectToDB();
