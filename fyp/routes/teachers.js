@@ -95,7 +95,7 @@ router.put('/:id', async function (req, res) {
         if (result.modifiedCount > 0) {
             res.status(200).json({ message: "Teacher updated" });
         } else {
-            res.status(404).json({ message: "Teacher not found" });
+            res.status(407).json({ message: "Teacher not updated" });
         }
     } catch (err) {
         res.status(400).json({ message: err.message });

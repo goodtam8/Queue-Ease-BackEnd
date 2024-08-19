@@ -36,6 +36,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
+
 app.use('/', indexRouter);
 app.use('/api/users', passport.authenticate('bearer', { session: false }), usersRouter);app.use('/api/course', coursesRouter); // around line 25
 app.use('/api/teacher', teacherRouter); // around line 25
@@ -43,6 +44,8 @@ app.use('/api/student', studentRouter); // around line 25
 app.use('/api/annou',announcementRouter);
 app.use('/api/leave',leaveRouter);
 app.use('/api/assign',assignRouter);
+var fileUpload = require('express-fileupload');
+app.use(fileUpload());
 
 
 // catch 404 and forward to error handler
