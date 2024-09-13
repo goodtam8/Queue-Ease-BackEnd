@@ -16,13 +16,11 @@ passport.use(new BearerStrategy(
 ));
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
-var coursesRouter = require('./routes/courses'); // around line 9
-var teacherRouter = require('./routes/teachers'); // around line 9
-var studentRouter = require('./routes/students'); // around line 9
-var announcementRouter = require('./routes/announcement'); // around line 9
-var assignRouter = require('./routes/assign'); // around line 9
+var restaurantrouter = require('./routes/restaurant'); // around line 9
+var staffrouter = require('./routes/staff'); // around line 9
+var customerrouter = require('./routes/customer'); // around line 9
 
-var leaveRouter=require('./routes/leave');
+
 var app = express();
 process.env.TOKEN_SECRET = 'secret';
 
@@ -38,14 +36,10 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 
 app.use('/', indexRouter);
-app.use('/api/users', passport.authenticate('bearer', { session: false }), usersRouter);app.use('/api/course', coursesRouter); // around line 25
-app.use('/api/teacher', teacherRouter); // around line 25
-app.use('/api/student', studentRouter); // around line 25
-app.use('/api/annou',announcementRouter);
-app.use('/api/leave',leaveRouter);
-app.use('/api/assign',assignRouter);
-var fileUpload = require('express-fileupload');
-app.use(fileUpload());
+app.use('/api/users', passport.authenticate('bearer', { session: false }), usersRouter);
+app.use('/api/restaurant', restaurantrouter); // around line 25
+app.use('/api/staff', staffrouter); // around line 25
+app.use('/api/customer', customerrouter); // around line 25
 
 
 // catch 404 and forward to error handler

@@ -7,7 +7,6 @@
 var app = require('../app');
 var debug = require('debug')('fyp:server');
 var http = require('http');
-var socketIo=require('socket.io');
 
 
 /**
@@ -23,16 +22,12 @@ app.set('port', port);
  */
 
 var server = http.createServer(app);
-const io=socketIo(server);
 
 /**
  * Listen on provided port, on all network interfaces.
  */
 
-server.listen(port,()=>{
-monitorChanges(io);
 
-});
 server.on('error', onError);
 server.on('listening', onListening);
 
@@ -56,48 +51,9 @@ function normalizePort(val) {
   return false;
 }
 
-// Socket.IO connection event
-io.on('connection', (socket) => {
-  console.log('A user connected',socket.id);
-
-// Handle events from the client
-socket.on('eventFromClient', (data) => {
-  
-  console.log('Received data from client:',data);
-  // Broadcast the data to all connected clients
-  io.emit('eventFromServer',"toooo");
-  });
-  socket.on('connect',()=>{
-    io.emit('connectwithyou',"yo")
-  })
-
-  
-  // Handle disconnection
-  socket.on('disconnect', () => {
-  console.log('A user disconnected');
-  });
-});
 
 
 
-async function monitorChanges(io) {
-  const db = await connectToDB();
-  const collection = db.collection("course");
-  const changeStream = collection.watch([
-    { $match: { "operationType": { $in: ["insert", "update", "replace"] } } },
-    { $project: { "_id": 1, "fullDocument": 1, "ns": 1, "documentKey": 1 } }
-  ], { fullDocument: "updateLookup" });
-
-  console.log("start monitoring the changes of announcement");
-
-  changeStream.on('change', async (change) => {
-    io.emit('db update', change.fullDocument);
-  });
-
-  changeStream.on('error', (error) => {
-    console.error('Change stream error:', error);
-  });
-}
 
 
 /**
