@@ -1,0 +1,160 @@
+
+var express = require('express');
+var router = express.Router();
+
+const { connectToDB, ObjectId } = require('../utils/db');
+// New food
+router.post('/', async function (req, res) {
+    const db = await connectToDB();
+    try {
+        req.body.price=parseInt(req.body.price)
+
+        let result = await db.collection("food").insertOne(req.body);
+        res.status(201).json({ id: result.insertedId });
+    } catch (err) {
+        res.status(400).json({ message: err.message });
+    } finally {
+        await db.client.close();
+    }
+});
+
+/* Retrieve a single food */
+router.get('/:id', async function (req, res) {
+    const db = await connectToDB();
+    try {
+        let result = await db.collection("food").findOne({ _id: new ObjectId(req.params.id) });
+        if (result) {
+            res.json(result);
+        } else {
+            res.status(404).json({ message: "Food not found" });
+        }
+    } catch (err) {
+        res.status(400).json({ message: err.message });
+    } finally {
+        await db.client.close();
+    }
+});
+/* Retrieve a single food and with his/her restaurant */
+router.get('/:id/restaurant', async function (req, res) {
+    const db = await connectToDB();
+    try {
+        let result = await db.collection("food").findOne({ _id: new ObjectId(req.params.id) });
+        if (result) {
+            const course = await db.collection("restaurant").findOne({ menu: { $elemMatch: { $eq:result.name.toString() } } });
+            res.json(course);
+
+
+
+        } else {
+            res.status(404).json({ message: "Food not found" });
+        }
+    } catch (err) {
+        res.status(400).json({ message: err.message });
+    } finally {
+        await db.client.close();
+    }
+});
+
+
+
+
+// Update a single Booking
+router.put('/:id', async function (req, res) {
+    const db = await connectToDB();
+    delete req.body._id
+
+    try {
+
+
+        let result = await db.collection("food").updateOne({ _id: new ObjectId(req.params.id) }, { $set: req.body });
+
+        if (result.modifiedCount > 0) {
+            res.status(200).json({ message: "Food updated" });
+        } else {
+            res.status(407).json({ message: "Food not updated" });
+        }
+    } catch (err) {
+        res.status(400).json({ message: err.message });
+    } finally {
+        await db.client.close();
+    }
+});
+
+router.get('/', async function (req, res) {
+    const db = await connectToDB();
+    db.collection("food").createIndex( { "$**" : 1 } )
+    db.collection("food").createIndex( { "$**" : -1 } )
+    try {
+        let query = {};
+        let sort = {'name':1};
+
+        let page = parseInt(req.query.page) || 1;
+        let perPage = parseInt(req.query.perPage) || 6;
+        let skip = (page - 1) * perPage;
+
+        let result = await db.collection("food").find(query).sort.apply(sort).skip(skip).limit(perPage).toArray();
+        let total = await db.collection("food").countDocuments(query);
+
+        res.json({ food: result, total: total, page: page, perPage: perPage });
+    } catch (err) {
+        res.status(400).json({ message: err.message });
+    }
+    finally {
+        await db.client.close();
+    }
+});
+
+
+//dropping a restaurant from a staff
+router.patch('/:name/:id/drop',async function(req,res){
+    const db = await connectToDB();
+
+    try{
+       
+        let courseUpdate = await db.collection("restaurant").updateOne(
+            { _id: new ObjectId(req.params.id) },
+            { 
+                $pull: { menu: req.params.name },
+            }
+        );
+
+        res.json({courseUpdate:courseUpdate})
+    }
+    catch (err) {
+        res.status(400).json({ message: err.message });
+    } finally {
+        await db.client.close();
+    }
+})
+
+router.patch('/:id/:name/', async function (req, res) {
+    const db = await connectToDB();
+   
+
+    try {
+
+     
+        
+            let courseUpdate = await db.collection("restaurant").updateOne(
+                { _id: new ObjectId(req.params.id) },
+                {  $push: { menu: req.params.staffid } }
+            );
+            if (courseUpdate.modifiedCount > 0) {
+                res.status(200).json({ message: "Food successfully assigned", results: courseUpdate });
+            } else {
+                res.status(404).json({ message: "Food not found" });
+            }
+
+      
+
+    } catch (err) {
+        res.status(400).json({ message: err.message });
+    } finally {
+        await db.client.close();
+    }
+});
+
+
+
+
+module.exports = router;

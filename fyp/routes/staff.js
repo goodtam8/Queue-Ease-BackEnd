@@ -17,6 +17,7 @@ router.post('/', async function (req, res) {
     }
 });
 
+
 /* Retrieve a single staff */
 router.get('/:id', async function (req, res) {
     const db = await connectToDB();
@@ -68,7 +69,7 @@ let sort = {'name':1};
         let skip = (page - 1) * perPage;
         let result = await db.collection("staff").find(query).sort(sort).skip(skip).limit(perPage).toArray();
         let total = await db.collection("staff").countDocuments(query);
-        res.json({ staff: result, total: total, page: page, perPage: perPage });
+        res.json({ staffs: result, total: total, page: page, perPage: perPage });
     } catch (err) {
         res.status(400).json({ message: err.message });
     }
@@ -86,15 +87,14 @@ router.patch('/:sid/:id/drop',async function(req,res){
 
     try{
        
-        console.log(result)
         let courseUpdate = await db.collection("restaurant").updateOne(
             { _id: new ObjectId(req.params.id) },
             { 
-                $pull: { staff_list: sid },
+                $pull: { staff_list: req.params.sid },
             }
         );
 
-        res.json({result:result,courseUpdate:courseUpdate})
+        res.json({courseUpdate:courseUpdate})
     }
     catch (err) {
         res.status(400).json({ message: err.message });
@@ -104,19 +104,19 @@ router.patch('/:sid/:id/drop',async function(req,res){
 })
 
 
-/* Retrieve a single student and with his/her restaurant */
+/* Retrieve a single staff and with his/her restaurant */
 router.get('/:id/get', async function (req, res) {
     const db = await connectToDB();
     try {
-        let result = await db.collection("student").findOne({ _id: new ObjectId(req.params.id) });
+        let result = await db.collection("staff").findOne({ _id: new ObjectId(req.params.id) });
         if (result) {
-            const course = await db.collection("restaurant").find({ staff_list: { $elemMatch: { $eq:result.sid } } }).toArray();
+            const course = await db.collection("restaurant").findOne({ staff_list: { $elemMatch: { $eq:result.sid.toString() } } });
             res.json(course);
 
 
 
         } else {
-            res.status(404).json({ message: "Student not found" });
+            res.status(404).json({ message: "Staff not found" });
         }
     } catch (err) {
         res.status(400).json({ message: err.message });
@@ -125,7 +125,7 @@ router.get('/:id/get', async function (req, res) {
     }
 });
 
-router.patch('/:id/:staffid/staff', async function (req, res) {
+router.patch('/:id/:staffid/', async function (req, res) {
     const db = await connectToDB();
    
 
@@ -135,17 +135,17 @@ router.patch('/:id/:staffid/staff', async function (req, res) {
         let conflict = await db.collection("restaurant").findOne(query);
 
         if(conflict) {//there is a conflict 
-            res.status(400).json({ message: `The staff has already assigned with restaurant` });
+            return res.status(400).json({ message: `The staff has already assigned with restaurant` });
         }
         
             let courseUpdate = await db.collection("restaurant").updateOne(
                 { _id: new ObjectId(req.params.id) },
-                {  $push: { staff_list: sid } }
+                {  $push: { staff_list: req.params.staffid } }
             );
             if (courseUpdate.modifiedCount > 0) {
-                res.status(200).json({ message: "Course successfully assigned", results: courseUpdate });
+                res.status(200).json({ message: "Staff successfully assigned", results: courseUpdate });
             } else {
-                res.status(404).json({ message: "Course not found" });
+                res.status(404).json({ message: "Staff not found" });
             }
 
       

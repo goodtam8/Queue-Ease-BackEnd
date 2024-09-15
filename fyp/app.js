@@ -19,7 +19,7 @@ var usersRouter = require('./routes/users');
 var restaurantrouter = require('./routes/restaurant'); // around line 9
 var staffrouter = require('./routes/staff'); // around line 9
 var customerrouter = require('./routes/customer'); // around line 9
-
+var foodrouter = require('./routes/food'); // around line 9
 
 var app = express();
 process.env.TOKEN_SECRET = 'secret';
@@ -40,6 +40,7 @@ app.use('/api/users', passport.authenticate('bearer', { session: false }), users
 app.use('/api/rest', restaurantrouter); // around line 25
 app.use('/api/staff', staffrouter); // around line 25
 app.use('/api/customer', customerrouter); // around line 25
+app.use('/api/food', foodrouter); // around line 25
 
 
 // catch 404 and forward to error handler

@@ -3,18 +3,13 @@ var express = require('express');
 var router = express.Router();
 
 const { connectToDB, ObjectId } = require('../utils/db');
-// New teacher
+// New customer
 router.post('/', async function (req, res) {
     const db = await connectToDB();
     try {
-        var myobj = {
-            staff_id: req.body.staff_id, mon: ["", "", "", "", "", "", "", "", "", ""], tue: ["", "", "", "", "", "", "", "", "", ""]
-            , wed: ["", "", "", "", "", "", "", "", "", ""], thur: ["", "", "", "", "", "", "", "", "", ""], fri: ["", "", "", "", "", "", "", "", "", ""]
-        };
+       
 
-        let timetable = await db.collection("timetable").insertOne(myobj);
-
-        let result = await db.collection("teacher").insertOne(req.body);
+        let result = await db.collection("customer").insertOne(req.body);
         res.status(201).json({ id: result.insertedId });
     } catch (err) {
         res.status(400).json({ message: err.message });
@@ -22,176 +17,6 @@ router.post('/', async function (req, res) {
         await db.client.close();
     }
 });
-
-/* Retrieve a single teacher */
-router.get('/:id', async function (req, res) {
-    const db = await connectToDB();
-    try {
-        let result = await db.collection("teacher").findOne({ _id: new ObjectId(req.params.id) });
-        if (result) {
-            res.json(result);
-        } else {
-            res.status(404).json({ message: "Teacher not found" });
-        }
-    } catch (err) {
-        res.status(400).json({ message: err.message });
-    } finally {
-        await db.client.close();
-    }
-});
-/* Retrieve a single teacher and with his/her course */
-router.get('/:id/course', async function (req, res) {
-    const db = await connectToDB();
-    try {
-        let result = await db.collection("teacher").findOne({ _id: new ObjectId(req.params.id) });
-        if (result) {
-            let courses = await db.collection("course").find({teacher:result.staff_id}).toArray();
-            res.json(courses);
-
-
-
-        } else {
-            res.status(404).json({ message: "Teacher not found" });
-        }
-    } catch (err) {
-        res.status(400).json({ message: err.message });
-    } finally {
-        await db.client.close();
-    }
-});
-
-
-/* Retrieve a single teacher and with his/her time table */
-router.get('/:id/timetable', async function (req, res) {
-    const db = await connectToDB();
-    try {
-        let result = await db.collection("teacher").findOne({ _id: new ObjectId(req.params.id) });
-        if (result) {
-            let timetable = await db.collection("timetable").findOne({staff_id:result.staff_id})
-            res.json(timetable);
-
-
-
-        } else {
-            res.status(404).json({ message: "Teacher not found" });
-        }
-    } catch (err) {
-        res.status(400).json({ message: err.message });
-    } finally {
-        await db.client.close();
-    }
-});
-
-// Update a single Booking
-router.put('/:id', async function (req, res) {
-    const db = await connectToDB();
-    delete req.body._id
-
-    try {
-
-
-        let result = await db.collection("teacher").updateOne({ _id: new ObjectId(req.params.id) }, { $set: req.body });
-
-        if (result.modifiedCount > 0) {
-            res.status(200).json({ message: "Teacher updated" });
-        } else {
-            res.status(407).json({ message: "Teacher not updated" });
-        }
-    } catch (err) {
-        res.status(400).json({ message: err.message });
-    } finally {
-        await db.client.close();
-    }
-});
-
-router.get('/', async function (req, res) {
-    const db = await connectToDB();
-    db.collection("course").createIndex( { "$**" : 1 } )
-    db.collection("course").createIndex( { "$**" : -1 } )
-    try {
-        let query = {};
-        let sort = {'name':1};
-
-        let page = parseInt(req.query.page) || 1;
-        let perPage = parseInt(req.query.perPage) || 6;
-        let skip = (page - 1) * perPage;
-
-        let result = await db.collection("teacher").find(query).sort.apply(sort).skip(skip).limit(perPage).toArray();
-        let total = await db.collection("teacher").countDocuments(query);
-
-        res.json({ teacher: result, total: total, page: page, perPage: perPage });
-    } catch (err) {
-        res.status(400).json({ message: err.message });
-    }
-    finally {
-        await db.client.close();
-    }
-});
-
-router.patch('/:sid/:cid/drop',async function(req,res){
-    const db = await connectToDB();
-    const course_time = ["0", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00"];
-
-    try{
-        var day;
-        var stime;
-        var etime;
-        var mtime;
-        let courseinfo = await db.collection("course").findOne({ cid: req.params.cid });//first get back the result 
-
-        const date = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-
-        for (let i = 0; i < date.length; i++) {
-            if (date[i] === courseinfo.week_day) {
-                day = date[i];
-                break;
-            }
-        }
-
-        stime = course_time.indexOf(courseinfo.start_time);
-        mtime = stime + 1;
-        etime = course_time.indexOf(courseinfo.end_time);
-
-        const cid = courseinfo.cid;
-        const quot=courseinfo.quota+1;
-
-        let sid = parseInt(req.params.sid);
-        var query = { [day + '.' + stime]: courseinfo.cid, staff_id: sid, [day + '.' + etime]: courseinfo.cid, [day + '.' + mtime]: courseinfo.cid };
-        let verify= await db.collection("timetable").findOne(query)
-        if(!verify){
-            res.status(400).json({ message:"No result found" });
-            return;
-
-        }
-        console.log(query)
-
-        let result = await db.collection("timetable").updateOne(query, {
-            $set: {
-                [day + '.' + stime]: "",
-                [day + '.' + mtime]: "",
-                [day + '.' + etime]: ""
-            }
-        });
-        console.log(result)
-        let courseUpdate = await db.collection("course").updateOne(
-            { _id: new ObjectId(courseinfo._id) },
-            { 
-               
-                $set: { teacher:null }
-            }
-        );
-
-        res.json({result:result,courseUpdate:courseUpdate})
-    }
-    catch (err) {
-        res.status(400).json({ message: err.message });
-    } finally {
-        await db.client.close();
-    }
-
-
-
-})
 
 
 
