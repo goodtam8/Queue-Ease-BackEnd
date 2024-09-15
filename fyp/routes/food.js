@@ -115,6 +115,8 @@ router.patch('/:name/:id/drop',async function(req,res){
             { _id: new ObjectId(req.params.id) },
             { 
                 $pull: { menu: req.params.name },
+                $set: { quota: result.quota +1 } // Combine the operations in a single object
+
             }
         );
 

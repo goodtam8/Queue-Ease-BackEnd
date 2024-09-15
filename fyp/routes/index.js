@@ -42,9 +42,9 @@ router.post('/api/login/user', async function (req, res, next) {
   try {
     let id = parseInt(req.body.sid)
     // check if the user exists
-    var user = await db.collection("user").findOne({ userid:id });
+    var user = await db.collection("customer").findOne({ uid:id });
     if (!user) {
-      res.status(401).json({ message: 'User not found' });
+      res.status(401).json({ message: 'Customer not found' });
       return;
     }
 
