@@ -35,7 +35,7 @@ router.get('/:id', async function (req, res) {
     }
 });
 /* Retrieve a single food and with his/her restaurant */
-router.get('/:id/restaurant', async function (req, res) {
+router.get('/:id/get', async function (req, res) {
     const db = await connectToDB();
     try {
         let result = await db.collection("food").findOne({ _id: new ObjectId(req.params.id) });
@@ -82,8 +82,8 @@ router.put('/:id', async function (req, res) {
 
 router.get('/', async function (req, res) {
     const db = await connectToDB();
-    db.collection("food").createIndex( { "$**" : 1 } )
-    db.collection("food").createIndex( { "$**" : -1 } )
+   await db.collection("food").createIndex( { "$**" : 1 } )
+    await db.collection("food").createIndex( { "$**" : -1 } )
     try {
         let query = {};
         let sort = {'name':1};
@@ -92,7 +92,7 @@ router.get('/', async function (req, res) {
         let perPage = parseInt(req.query.perPage) || 6;
         let skip = (page - 1) * perPage;
 
-        let result = await db.collection("food").find(query).sort.apply(sort).skip(skip).limit(perPage).toArray();
+        let result = await db.collection("food").find(query).sort(sort).skip(skip).limit(perPage).toArray();
         let total = await db.collection("food").countDocuments(query);
 
         res.json({ food: result, total: total, page: page, perPage: perPage });
@@ -129,15 +129,19 @@ router.patch('/:name/:id/drop',async function(req,res){
 
 router.patch('/:id/:name/', async function (req, res) {
     const db = await connectToDB();
-   
 
     try {
+        let result= await db.collection("restaurant").findOne({ _id: new ObjectId(req.params.id) });
 
      
         
             let courseUpdate = await db.collection("restaurant").updateOne(
                 { _id: new ObjectId(req.params.id) },
-                {  $push: { menu: req.params.staffid } }
+                { _id: new ObjectId(req.params.id) },
+                {
+                    $push: { menu: req.params.name },
+                    $set: { quota: result.quota - 1 } // Combine the operations in a single object
+                }
             );
             if (courseUpdate.modifiedCount > 0) {
                 res.status(200).json({ message: "Food successfully assigned", results: courseUpdate });
