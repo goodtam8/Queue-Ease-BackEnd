@@ -9,6 +9,7 @@ var passport = require('passport');
 // New restaurant
 router.post('/', passport.authenticate('bearer', { session: false }), async function (req, res) {
     const db = await connectToDB();
+    req.body.outside = parseInt(req.body.outside) == 1;
 
     try {
 
@@ -51,7 +52,7 @@ router.get('/:name', async function (req, res) {
 
 
 /* Retrieve a single restaurant */
-router.get('/:id', async function (req, res) {
+router.get('/id/:id', async function (req, res) {
     const db = await connectToDB();
     try {
         let result = await db.collection("restaurant").findOne({ _id: new ObjectId(req.params.id) });
@@ -73,6 +74,8 @@ router.put('/:id', async function (req, res) {
     const db = await connectToDB();
     try {
         delete req.body._id
+        req.body.outside = parseInt(req.body.outside) == 1;
+
 
 
         let result = await db.collection("restaurant").updateOne({ _id: new ObjectId(req.params.id) }, { $set: req.body });
@@ -133,7 +136,7 @@ router.get('/', async function (req, res) {
         let result = await db.collection("restaurant").find(query).sort(sort).skip(skip).limit(perPage).toArray();
         let total = await db.collection("restaurant").countDocuments(query);
 
-        res.json({ courses: result, total: total, page: page, perPage: perPage });
+        res.json({ rests: result, total: total, page: page, perPage: perPage });
     } catch (err) {
         res.status(400).json({ message: err.message });
     }
@@ -145,7 +148,11 @@ router.get('/', async function (req, res) {
 router.delete('/:id', async function (req, res) {
     const db = await connectToDB();
     try {
+        let result3 = await db.collection("restaurant").findOne({ _id: new ObjectId(req.params.id) });
+
         let result = await db.collection("restaurant").deleteOne({ _id: new ObjectId(req.params.id) });
+
+        let result2 = await db.collection("table").deleteMany({ belong: result3.name });
 
         if (result.deletedCount > 0) {
             res.status(200).json({ message: "restaurant deleted" });

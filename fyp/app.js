@@ -37,7 +37,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
 app.use('/api/users', passport.authenticate('bearer', { session: false }), usersRouter);
-app.use('/api/restaurant', restaurantrouter); // around line 25
+app.use('/api/rest', restaurantrouter); // around line 25
 app.use('/api/staff', staffrouter); // around line 25
 app.use('/api/customer', customerrouter); // around line 25
 

@@ -37,14 +37,14 @@ res.json({ token: token });
   }
 });
 
-router.post('/api/login/student', async function (req, res, next) {
+router.post('/api/login/user', async function (req, res, next) {
   const db = await connectToDB();
   try {
     let id = parseInt(req.body.sid)
     // check if the user exists
-    var user = await db.collection("student").findOne({ sid:id });
+    var user = await db.collection("user").findOne({ userid:id });
     if (!user) {
-      res.status(401).json({ message: 'Admin not found' });
+      res.status(401).json({ message: 'User not found' });
       return;
     }
 
@@ -80,15 +80,15 @@ router.post('/api/upload',  async function (req, res) {
   }
 });
 
-router.post('/api/login/teacher', async function (req, res, next) {
+router.post('/api/login/staff', async function (req, res, next) {
   const db = await connectToDB();
   try {
     let id = parseInt(req.body.sid)
 
     // check if the user exists
-    var user = await db.collection("teacher").findOne({ staff_id: id});
+    var user = await db.collection("staff").findOne({ sid: id});
     if (!user) {
-      res.status(401).json({ message: 'Admin not found' });
+      res.status(401).json({ message: 'Staff not found' });
       return;
     }
 
