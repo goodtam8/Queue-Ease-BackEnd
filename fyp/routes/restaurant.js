@@ -10,7 +10,7 @@ var passport = require('passport');
 router.post('/', passport.authenticate('bearer', { session: false }), async function (req, res) {
     const db = await connectToDB();
     req.body.outside = parseInt(req.body.outside) == 1;
-    req.body.quota=2;
+    req.body.numoftable=2;
 
     try {
 
@@ -79,7 +79,7 @@ router.put('/:id', async function (req, res) {
         delete req.body._id
         req.body.outside = parseInt(req.body.outside) == 1;
 
-        req.body.quota=res.quota;
+        req.body.numoftable=res.numoftable;
 
 
         let result = await db.collection("restaurant").updateOne({ _id: new ObjectId(req.params.id) }, { $set: req.body });

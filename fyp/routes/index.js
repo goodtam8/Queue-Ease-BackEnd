@@ -3,6 +3,7 @@ var router = express.Router();
 const { connectToDB, ObjectId } = require('../utils/db');
 const { generateToken } = require('../utils/auth');
 const multer = require('multer');
+const admin = require('./firebase'); // Import the initialized Firebase Admin SDK
 
 const upload = multer({ dest: 'uploads/' }); // This will save uploaded files to an 'uploads' directory
 
@@ -105,6 +106,26 @@ res.json({ token: token });
     res.status(400).json({ message: err.message });
   } finally {
     await db.client.close();
+  }
+});
+router.post('/send', async (req, res) => {
+  const { token, title, body } = req.body; // Get FCM token and message details from request
+
+  const message = {
+    notification: {
+      title: title,
+      body: body,
+    },
+    token: token, // The FCM token of the recipient
+  };
+
+  try {
+    const response = await admin.messaging().send(message);
+    console.log('Notification sent successfully:', response);
+    res.status(200).send('Notification sent successfully');
+  } catch (error) {
+    console.error('Error sending notification:', error);
+    res.status(500).send('Error sending notification');
   }
 });
 
