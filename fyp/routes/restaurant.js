@@ -74,12 +74,12 @@ router.get('/id/:id', async function (req, res) {
 router.put('/:id', async function (req, res) {
     const db = await connectToDB();
     try {
-        let res = await db.collection("restaurant").findOne({ _id: new ObjectId(req.body.id) });
+        let resu = await db.collection("restaurant").findOne({ _id:new ObjectId(req.params.id) });
 
         delete req.body._id
         req.body.outside = parseInt(req.body.outside) == 1;
 
-        req.body.numoftable=res.numoftable;
+        req.body.numoftable=resu.numoftable;
 
 
         let result = await db.collection("restaurant").updateOne({ _id: new ObjectId(req.params.id) }, { $set: req.body });
