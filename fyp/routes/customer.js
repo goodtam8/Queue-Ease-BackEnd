@@ -51,6 +51,32 @@ router.get('/:id', async function (req, res) {
         await db.client.close();
     }
 });
+//handle search and return all students
+router.get('/', async function (req, res) {
+    const db = await connectToDB();
+    db.collection("customer").createIndex( { "$**" : 1 } )
+    db.collection("customer").createIndex( { "$**" : -1 } )
+
+
+    try {
+        let query = {};
+        // sort by sort_by query parameter
+let sort = {'name':1};
+
+        let page = parseInt(req.query.page) || 1;
+        let perPage = parseInt(req.query.perPage) || 6;
+        let skip = (page - 1) * perPage;
+        let result = await db.collection("customer").find(query).sort(sort).skip(skip).limit(perPage).toArray();
+        let total = await db.collection("customer").countDocuments(query);
+        res.json({ customers: result, total: total, page: page, perPage: perPage });
+    } catch (err) {
+        res.status(400).json({ message: err.message });
+    }
+    finally {
+        await db.client.close();
+    }
+});
+
 
 
 module.exports = router;
