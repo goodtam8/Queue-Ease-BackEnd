@@ -2,6 +2,7 @@ var express = require('express');
 var router = express.Router();
 const { connectToDB, ObjectId } = require('../utils/db');
 var passport = require('passport');
+const admin = require('../routes/firebase');
 
 
 
@@ -10,15 +11,15 @@ var passport = require('passport');
 router.post('/', passport.authenticate('bearer', { session: false }), async function (req, res) {
     const db = await connectToDB();
     req.body.outside = parseInt(req.body.outside) == 1;
-    req.body.numoftable=2;
+    req.body.numoftable = 2;
 
     try {
 
-        
+
         req.body.numoftable = parseInt(req.body.numoftable);
         for (let i = 1; i <= parseInt(req.body.numoftable); i++) {
 
-            var myobj = { table_num: i, status: "available", belong: req.body.name};
+            var myobj = { table_num: i, status: "available", belong: req.body.name };
 
             let result2 = await db.collection("table").insertOne(myobj);
         }
@@ -68,18 +69,58 @@ router.get('/id/:id', async function (req, res) {
         await db.client.close();
     }
 });
+router.post('/send', async function (req, res) {//later add more logic here 
+    // Log the incoming request
+    console.log('Received request:', req.body);
 
+    // Check for registration token
+    const registrationToken = req.body.registrationtoken;
+    if (!registrationToken) {
+        return res.status(400).send('Registration token is required');
+    }
+
+    const messagesend = {
+        token: registrationToken,
+        notification: {
+            title: req.body.title,
+            body: req.body.body
+        },
+        data: {
+            key1: "value1",
+            key2: "value2"
+        },
+        android: {
+            priority: "high"
+        },
+        apns: {
+            payload: {
+                aps: {
+                    badge: 42
+                }
+            }
+        }
+    };
+
+    try {
+        const response = await admin.messaging().send(messagesend);
+        console.log('Successfully sent message:', response);
+        res.status(200).send('Notification sent successfully');
+    } catch (error) {
+        console.error('Error sending message:', error);
+        res.status(500).send('Error sending notification');
+    }
+});
 
 // Update a single restaurant
 router.put('/:id', async function (req, res) {
     const db = await connectToDB();
     try {
-        let resu = await db.collection("restaurant").findOne({ _id:new ObjectId(req.params.id) });
+        let resu = await db.collection("restaurant").findOne({ _id: new ObjectId(req.params.id) });
 
         delete req.body._id
         req.body.outside = parseInt(req.body.outside) == 1;
 
-        req.body.numoftable=resu.numoftable;
+        req.body.numoftable = resu.numoftable;
 
 
         let result = await db.collection("restaurant").updateOne({ _id: new ObjectId(req.params.id) }, { $set: req.body });
@@ -121,9 +162,9 @@ router.get('/rest/all', async function (req, res) {
 
 router.get('/', async function (req, res) {
     const db = await connectToDB();
-    db.collection("restaurant").createIndex( { "$**" : 1 } )
-    db.collection("restaurant").createIndex( { "$**" : -1 } )
-    let sort = {'name':1};
+    db.collection("restaurant").createIndex({ "$**": 1 })
+    db.collection("restaurant").createIndex({ "$**": -1 })
+    let sort = { 'name': 1 };
 
     try {
         let query = {};
@@ -131,7 +172,7 @@ router.get('/', async function (req, res) {
             // query.email = req.query.email;
             query.name = { $regex: req.query.name };
         }
-        
+
 
         let page = parseInt(req.query.page) || 1;
         let perPage = parseInt(req.query.perPage) || 6;
