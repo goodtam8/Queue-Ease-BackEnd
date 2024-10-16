@@ -69,6 +69,26 @@ router.get('/id/:id', async function (req, res) {
         await db.client.close();
     }
 });
+
+/* Retrieve a single restaurant */
+router.get('/id/:id/food', async function (req, res) {
+    const db = await connectToDB();
+    try {
+        let result = await db.collection("restaurant").findOne({ _id: new ObjectId(req.params.id) });
+        if (result) {
+            // Use the $in operator to find food items whose names are in the result.menu array
+            let food = await db.collection("food").find({ name: { $in: result.menu } }).toArray();
+            res.json(food);
+        } else {
+            res.status(404).json({ message: "Restaurant not found" });
+        }
+    } catch (err) {
+        res.status(400).json({ message: err.message });
+    } finally {
+        await db.client.close();
+    }
+});
+
 router.post('/send', async function (req, res) {//later add more logic here 
     // Log the incoming request
     console.log('Received request:', req.body);

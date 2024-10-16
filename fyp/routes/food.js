@@ -40,7 +40,7 @@ router.get('/:id/get', async function (req, res) {
     try {
         let result = await db.collection("food").findOne({ _id: new ObjectId(req.params.id) });
         if (result) {
-            const course = await db.collection("restaurant").findOne({ menu: { $elemMatch: { $eq:result.name.toString() } } });
+            const course = await db.collection("restaurant").find({ menu: { $elemMatch: { $eq:result.name.toString() } } }).toArray();
             res.json(course);
 
 
@@ -133,25 +133,25 @@ router.patch('/:id/:name/', async function (req, res) {
     const db = await connectToDB();
 
     try {
-        let result= await db.collection("restaurant").findOne({ _id: new ObjectId(req.params.id) });
+        let result = await db.collection("restaurant").findOne({ _id: new ObjectId(req.params.id) });
 
-     
-        
-            let courseUpdate = await db.collection("restaurant").updateOne(
-                { _id: new ObjectId(req.params.id) },
-                { _id: new ObjectId(req.params.id) },
-                {
-                    $push: { menu: req.params.name },
-                    $set: { quota: result.quota - 1 } // Combine the operations in a single object
-                }
-            );
-            if (courseUpdate.modifiedCount > 0) {
-                res.status(200).json({ message: "Food successfully assigned", results: courseUpdate });
-            } else {
-                res.status(404).json({ message: "Food not found" });
+        if (!result) {
+            return res.status(404).json({ message: "Restaurant not found" });
+        }
+
+        let courseUpdate = await db.collection("restaurant").updateOne(
+            { _id: new ObjectId(req.params.id) }, // Filter
+            { 
+                $push: { menu: req.params.name }, // Update operations
+                $set: { quota: result.quota - 1 }
             }
+        );
 
-      
+        if (courseUpdate.modifiedCount > 0) {
+            res.status(200).json({ message: "Food successfully assigned", results: courseUpdate });
+        } else {
+            res.status(404).json({ message: "Food not found" });
+        }
 
     } catch (err) {
         res.status(400).json({ message: err.message });
@@ -159,7 +159,6 @@ router.patch('/:id/:name/', async function (req, res) {
         await db.client.close();
     }
 });
-
 
 
 
