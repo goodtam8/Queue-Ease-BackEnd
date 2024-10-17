@@ -78,7 +78,7 @@ router.get('/id/:id/food', async function (req, res) {
         if (result) {
             // Use the $in operator to find food items whose names are in the result.menu array
             let food = await db.collection("food").find({ name: { $in: result.menu } }).toArray();
-            res.json(food);
+            res.json({food: food});
         } else {
             res.status(404).json({ message: "Restaurant not found" });
         }
