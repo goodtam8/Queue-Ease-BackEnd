@@ -42,7 +42,7 @@ app.use('/api/rest', restaurantrouter); // around line 25
 app.use('/api/staff', staffrouter); // around line 25
 app.use('/api/customer', customerrouter); // around line 25
 app.use('/api/food', foodrouter); // around line 25
-app.use('api/table',tablerouter);
+app.use('/api/table',tablerouter);
 
 
 // catch 404 and forward to error handler
