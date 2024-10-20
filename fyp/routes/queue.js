@@ -25,6 +25,65 @@ router.post('/', async function (req, res) {
     }
 });
 
+// Verify if a customer is in the queue
+router.get('/:id/verify', async function (req, res) {
+    const db = await connectToDB();
+    try {
+        const customerId = req.params.id;
+
+        // Query the database to check if the customerId exists in the queueArray
+        const queueExists = await db.collection("queue").find({
+            "queueArray": {
+                $elemMatch: { customerId: customerId }
+            }
+        }).toArray();
+
+        if (queueExists.length > 0) {
+            return res.status(200).json({ exists: queueExists }); // Return true if a queue exists
+        } else {
+            return res.status(200).json({ exists: queueExists }); // Return false if no queue exists
+        }
+    } catch (err) {
+        res.status(400).json({ message: err.message });
+    } finally {
+        await db.client.close();
+    }
+});
+
+// update the user check in 
+router.patch('/:id/:name/checkin', async function (req, res) {
+    const db = await connectToDB();
+    try {
+        const customerId = req.params.id;
+        console.log(customerId);
+
+        // Query the database to check if the customerId exists in the queueArray
+        const queueExists = await db.collection("queue").updateOne(
+            { 
+                "queueArray": {
+                    $elemMatch: { customerId: customerId }
+                },
+                restaurantName: req.params.name 
+            },
+            { 
+                $set: { "queueArray.$.checkInTime": new Date() } 
+            }
+        )
+        console.log(queueExists);
+        
+        if (queueExists.modifiedCount > 0) {
+            res.status(200).json({ message: "Customer checked in successfully" });
+        } else {
+            res.status(404).json({ message: "Customer not found in queue" });
+        }
+    } catch (err) {
+        res.status(400).json({ message: err.message });
+    } finally {
+        await db.client.close();
+    }
+});
+
+
 router.get('/:name', async function (req, res) {
     const db = await connectToDB();
     try {
@@ -41,6 +100,8 @@ router.get('/:name', async function (req, res) {
         await db.client.close();
     }
 });
+//update the customer has been check out /join
+
 router.put('/:id', async function (req, res) {
     const db = await connectToDB();
     try {
@@ -88,21 +149,28 @@ router.delete('/:id', async function (req, res) {
         await db.client.close();
     }
 });
-router.put('/:id/add', async function (req, res) {
+// Join the queue
+router.put('/:name/add', async function (req, res) {
     const db = await connectToDB();
     try {
-        const queueId = req.params.id; // Get the queue ID from the URL parameters
-        const { customerId, numberOfPeople } = req.body; // Get customer details from the request body
-
+        const name = req.params.name; // Get the queue ID from the URL parameters
+        let { customerId, numberOfPeople } = req.body; // Get customer details from the request body
+        customerId = customerId.toString();
         // Validate the request body
         if (!customerId || typeof numberOfPeople !== 'number' || numberOfPeople <= 0) {
             return res.status(400).json({ message: "Invalid customer data" });
         }
 
         // Get the current queue
-        const queue = await db.collection("queue").findOne({ _id: new ObjectId(queueId) });
+        const queue = await db.collection("queue").findOne({ restaurantName: name });
         if (!queue) {
             return res.status(404).json({ message: "Queue not found" });
+        }
+
+        // Check if the customer is already in the queue
+        const customerExists = queue.queueArray.some(customer => customer.customerId === customerId);
+        if (customerExists) {
+            return res.status(400).json({ message: "Customer is already in the queue" });
         }
 
         // Determine the next queue number
@@ -117,7 +185,7 @@ router.put('/:id/add', async function (req, res) {
 
         // Update the queue by adding the new customer to the queueArray
         await db.collection("queue").updateOne(
-            { _id: new ObjectId(queueId) },
+            { _id: new ObjectId(queue._id) },
             { $push: { queueArray: newCustomer } } // Push the new customer into the queueArray
         );
 
@@ -128,6 +196,7 @@ router.put('/:id/add', async function (req, res) {
         await db.client.close();
     }
 });
+
 router.get('/check/:name', async function (req, res) {
     const db = await connectToDB();
     try {
