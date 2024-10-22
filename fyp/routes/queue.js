@@ -25,6 +25,25 @@ router.post('/', async function (req, res) {
     }
 });
 
+//get a singlequeue using restaurant name 
+router.get('/:name', async function (req, res) {
+    const db = await connectToDB();
+    try {
+        let result = await db.collection("queue").findOne({ restaurantName: req.params.name });
+        if (result) {
+            res.json({queue:result});
+        } else {
+            res.status(404).json({ message: "Queue not found" });
+        }
+    } catch (err) {
+        res.status(400).json({ message: err.message });
+    } finally {
+        await db.client.close();
+    }
+})
+
+
+
 // Verify if a customer is in the queue
 router.get('/:id/verify', async function (req, res) {
     const db = await connectToDB();
@@ -53,24 +72,25 @@ router.get('/:id/verify', async function (req, res) {
 // update the user check in 
 router.patch('/:id/:name/checkin', async function (req, res) {
     const db = await connectToDB();
+    // later can make it complex to handle different condition
     try {
         const customerId = req.params.id;
         console.log(customerId);
 
         // Query the database to check if the customerId exists in the queueArray
         const queueExists = await db.collection("queue").updateOne(
-            { 
+            {
                 "queueArray": {
                     $elemMatch: { customerId: customerId }
                 },
-                restaurantName: req.params.name 
+                restaurantName: req.params.name
             },
-            { 
-                $set: { "queueArray.$.checkInTime": new Date() } 
+            {
+                $set: { "queueArray.$.checkInTime": new Date() }
             }
         )
         console.log(queueExists);
-        
+
         if (queueExists.modifiedCount > 0) {
             res.status(200).json({ message: "Customer checked in successfully" });
         } else {
@@ -84,22 +104,7 @@ router.patch('/:id/:name/checkin', async function (req, res) {
 });
 
 
-router.get('/:name', async function (req, res) {
-    const db = await connectToDB();
-    try {
-        let result = await db.collection("queue").findOne({ restaurantName: req.params.name });
-        if (result) {
 
-            res.json({ queue: result });
-        } else {
-            res.status(404).json({ message: "Queue not found" });
-        }
-    } catch (err) {
-        res.status(400).json({ message: err.message });
-    } finally {
-        await db.client.close();
-    }
-});
 //update the customer has been check out /join
 
 router.put('/:id', async function (req, res) {
@@ -108,8 +113,8 @@ router.put('/:id', async function (req, res) {
         const queueId = req.params.id; // Get the queue ID from the URL parameters
         const newPosition = req.body.currentPosition; // Get the new position from the request body
         let queuenum = await db.collection("queue").findOne({ _id: new ObjectId(req.params.id) });
-        if (queuenum.queueArray.length <= newPosition) {
-            return res.status(400).json({ message: "You have update the queue number exceed the limit" });
+        if (queuenum.queueArray.length < newPosition) {
+            return res.status(407).json({ message: "You have update the queue number exceed the limit" });
 
         }
 
@@ -156,10 +161,7 @@ router.put('/:name/add', async function (req, res) {
         const name = req.params.name; // Get the queue ID from the URL parameters
         let { customerId, numberOfPeople } = req.body; // Get customer details from the request body
         customerId = customerId.toString();
-        // Validate the request body
-        if (!customerId || typeof numberOfPeople !== 'number' || numberOfPeople <= 0) {
-            return res.status(400).json({ message: "Invalid customer data" });
-        }
+
 
         // Get the current queue
         const queue = await db.collection("queue").findOne({ restaurantName: name });
