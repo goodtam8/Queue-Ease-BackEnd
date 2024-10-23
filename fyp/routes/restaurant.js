@@ -22,6 +22,14 @@ router.post('/', passport.authenticate('bearer', { session: false }), async func
 
             let result2 = await db.collection("table").insertOne(myobj);
         }
+        var historicaldata = {
+            belong: req.body.name, '1-2 people': 50,
+            '3-4 people': 70,
+            '5-6 people': 90,
+            '7+ people': 100,
+        }
+        let history = await db.collection("dining").insertOne(historicaldata);
+
 
 
 
@@ -77,7 +85,7 @@ router.get('/id/:id/food', async function (req, res) {
         if (result) {
             // Use the $in operator to find food items whose names are in the result.menu array
             let food = await db.collection("food").find({ name: { $in: result.menu } }).toArray();
-            res.json({food: food});
+            res.json({ food: food });
         } else {
             res.status(404).json({ message: "Restaurant not found" });
         }
@@ -138,7 +146,7 @@ router.put('/:id', async function (req, res) {
 
         delete req.body._id
         req.body.outside = parseInt(req.body.outside) == 1;
-// number of table should be disable to update for now 
+        // number of table should be disable to update for now 
         req.body.numoftable = resu.numoftable;
 
 

@@ -53,12 +53,14 @@ router.get('/:name/status', async function (req, res) {
 
 
 // Update a single table status
-router.put('/:id', async function (req, res) {
+router.put('/:id/occupied', async function (req, res) {
     const db = await connectToDB();
     try {
+        req.body.occupiedSince = new Date();
 
 
         let result = await db.collection("table").updateOne({ _id: new ObjectId(req.params.id) }, { $set: req.body });
+
 
         if (result.modifiedCount > 0) {
             res.status(200).json({ message: "Table updated" });
@@ -71,7 +73,62 @@ router.put('/:id', async function (req, res) {
         await db.client.close();
     }
 });
+//update average dineing time 
+router.put('/:id/free', async (req, res) => {
+    const db = await connectToDB();
 
+    try {
+
+        const tableId = req.params.id;
+
+        // Fetch the table that is being vacated
+        const table = await db.collection("table").findOne({ _id: new ObjectId(tableId) })
+        if (!table || table.status !== 'in used') {
+            return res.status(404).send('Table not found or not in used');
+        }
+
+        // Calculate dining duration
+        const occupiedSince = new Date(table.occupiedSince);
+        const vacatedAt = new Date();
+        const diningDuration = (vacatedAt - occupiedSince) / (1000 * 60); // Convert to minutes
+
+        // Fetch historical data
+        let historicalData = await db.collection("dining").findOne({ belong: table.belong });
+
+        //calculate average
+        // Update average dining time
+        //assume each time is 100 for simplicity 
+        let partySize = '1-2 people';
+
+        if (table.type != null) {
+             partySize = table.type ?? '1-2 people';
+
+        }
+     
+
+        const currentAvgDiningTime = historicalData[`${partySize}`] || 0;
+        const currentCount = 100;
+
+        const newAvgDiningTime = ((currentAvgDiningTime * currentCount) + diningDuration) / (currentCount + 1);
+       
+        await db.collection("dining").updateOne(
+            { belong: table.belong },
+            { $set: {[partySize]:newAvgDiningTime
+                
+            } }
+          );
+          
+
+        req.body.occupiedSince = null;
+        // Update table status to free
+        await db.collection("table").updateOne({ _id: new ObjectId(tableId) },{$set:req.body} );
+
+        res.status(200).json({ message: "Table updated to available" });
+    } catch (error) {
+        console.log(error)
+        res.status(500).send('Error updating table status and historical data');
+    }
+});
 
 
 

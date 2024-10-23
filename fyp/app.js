@@ -22,6 +22,7 @@ var customerrouter = require('./routes/customer'); // around line 9
 var foodrouter = require('./routes/food'); // around line 9
 var tablerouter=require('./routes/table')
 var queuerouter=require('./routes/queue')
+var predict=require('./routes/predict');
 var app = express();
 process.env.TOKEN_SECRET = 'secret';
 
@@ -44,6 +45,7 @@ app.use('/api/customer', customerrouter); // around line 25
 app.use('/api/food', foodrouter); // around line 25
 app.use('/api/table',tablerouter);
 app.use('/api/queue',queuerouter);
+app.use('/api/predict',predict)
 
 
 
