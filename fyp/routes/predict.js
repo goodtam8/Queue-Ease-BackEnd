@@ -39,6 +39,10 @@ router.get('/:name', async (req, res) => {
         if (tableStatus.length > 0) {
           const availableTableTime = tableStatus.shift();// check which one is larger comparison
           waitingTime = Math.max(waitingTime, availableTableTime);//why pick largest because it has to there are other people 
+          //maybe a case only one 7+people table
+          // so that why have the 
+          //前一位有人下一位等同一張咪要＋avg dining time
+          //loop stand for how many table they have to wait 
         } else {
           waitingTime += avgDiningTime;
         }
