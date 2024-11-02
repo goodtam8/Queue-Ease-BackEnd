@@ -23,6 +23,7 @@ var foodrouter = require('./routes/food'); // around line 9
 var tablerouter=require('./routes/table')
 var queuerouter=require('./routes/queue')
 var predict=require('./routes/predict');
+var gpt=require('./routes/ai')
 var app = express();
 process.env.TOKEN_SECRET = 'secret';
 
@@ -36,7 +37,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-
+app.use('/api/gpt',gpt);
 app.use('/', indexRouter);
 app.use('/api/users', passport.authenticate('bearer', { session: false }), usersRouter);
 app.use('/api/rest', restaurantrouter); // around line 25

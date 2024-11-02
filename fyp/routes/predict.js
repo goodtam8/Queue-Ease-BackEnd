@@ -114,8 +114,10 @@ router.get('/:name/:id/time', async (req, res) => {
         const avgDiningTime = historicalData[obj.numberOfPeople] || 60; // Default to 60 minutes if not found
 
         if (tableStatus.length > 0) {//base on their time 
-          const availableTableTime = tableStatus.shift();// check which one is larger comparison
-          waitingTime = Math.max(waitingTime, availableTableTime);
+          const availableTableTime = tableStatus.shift();
+          waitingTime = Math.max(waitingTime, availableTableTime);//Multiple tables becoming available at different times
+          //Sequential seating of customers
+          //The fact that a customer must wait for the longest remaining time among available tables if earlier tables are taken by customers ahead in the queue
         } else {
           waitingTime += avgDiningTime;
         }
