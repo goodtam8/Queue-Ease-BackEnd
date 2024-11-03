@@ -1,5 +1,6 @@
 var express = require('express');
 var router = express.Router();
+const admin = require('./firebase'); // Import the initialized Firebase Admin SDK
 
 const { connectToDB, ObjectId } = require('../utils/db');
 //new queue
@@ -31,7 +32,7 @@ router.get('/:name', async function (req, res) {
     try {
         let result = await db.collection("queue").findOne({ restaurantName: req.params.name });
         if (result) {
-            res.json({queue:result});
+            res.json({ queue: result });
         } else {
             res.status(404).json({ message: "Queue not found" });
         }
@@ -44,7 +45,7 @@ router.get('/:name', async function (req, res) {
 
 
 
-// Verify if a customer is in the queue
+// get back the customer take queue in the restuarant 
 router.get('/:id/verify', async function (req, res) {
     const db = await connectToDB();
     try {
@@ -60,7 +61,7 @@ router.get('/:id/verify', async function (req, res) {
         if (queueExists.length > 0) {
             return res.status(200).json({ exists: queueExists }); // Return true if a queue exists
         } else {
-            return res.status(200).json({ exists: queueExists }); // Return false if no queue exists
+            return res.status(404).json({ exists: "Not found" }); // Return false if no queue exists
         }
     } catch (err) {
         res.status(400).json({ message: err.message });
@@ -105,8 +106,7 @@ router.patch('/:id/:name/checkin', async function (req, res) {
 
 
 
-//update the customer has been check out /join
-
+//update the queue position 
 router.put('/:id', async function (req, res) {
     const db = await connectToDB();
     try {
@@ -117,6 +117,7 @@ router.put('/:id', async function (req, res) {
             return res.status(407).json({ message: "You have update the queue number exceed the limit" });
 
         }
+      
 
 
         // Update the queue's current position
@@ -128,6 +129,39 @@ router.put('/:id', async function (req, res) {
         if (result.modifiedCount === 0) {
             return res.status(404).json({ message: "Queue not found or position unchanged" });
         }
+  //find the db to in customer using the queue array index  to get the customer id when getting device token 
+        //send the message  using that token 
+        const queue=await db.collection("queue").findOne(
+            { _id: new ObjectId(queueId) }, // Filter by queue ID
+              // Update the current position
+        );
+        console.log(queue.queueArray[newPosition-1].customerId)
+        const id=queue.queueArray[newPosition-1].customerId
+        const customer=await db.collection("customer").findOne({_id:new ObjectId(id)})
+        const messagesend = {
+            token:customer.fcm,
+            notification: {
+                title: `Queue message from ${queue.restaurantName}`,
+                body: "It is your turn now. Please come to us for check in "
+            },
+            data: {
+                key1: "value1",
+                key2: "value2"
+            },
+            android: {
+                priority: "high"
+            },
+            apns: {
+                payload: {
+                    aps: {
+                        badge: 42
+                    }
+                }
+            }
+        };
+    
+       
+            const response = await admin.messaging().send(messagesend);
 
         res.status(200).json({ message: "Queue position updated successfully" });
     } catch (err) {
