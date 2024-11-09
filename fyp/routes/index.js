@@ -8,11 +8,11 @@ const admin = require('./firebase'); // Import the initialized Firebase Admin SD
 const upload = multer({ dest: 'uploads/' }); // This will save uploaded files to an 'uploads' directory
 
 /* GET home page. */
-router.get('/', function(req, res, next) {
+router.get('/', function (req, res, next) {
   res.render('index', { title: 'Express' });
 });
 
-router.post('/api/login', upload.single('file'),async function (req, res, next) {
+router.post('/api/login', upload.single('file'), async function (req, res, next) {
   const db = await connectToDB();
   try {
     // check if the user exists
@@ -22,15 +22,15 @@ router.post('/api/login', upload.single('file'),async function (req, res, next) 
       return;
     }
 
-// res.json(user);
+    // res.json(user);
 
-delete user.password;
+    delete user.password;
 
-// generate a JWT token
-const token = generateToken(user);
+    // generate a JWT token
+    const token = generateToken(user);
 
-// return the token
-res.json({ token: token });    
+    // return the token
+    res.json({ token: token });
   } catch (err) {
     res.status(400).json({ message: err.message });
   } finally {
@@ -43,28 +43,28 @@ router.post('/api/login/user', async function (req, res, next) {
   try {
     let id = parseInt(req.body.sid)
     // check if the user exists
-    var user = await db.collection("customer").findOne({ uid:id });
+    var user = await db.collection("customer").findOne({ uid: id });
     if (!user) {
       res.status(401).json({ message: 'Customer not found' });
       return;
     }
 
-// res.json(user);
+    // res.json(user);
 
-delete user.password;
+    delete user.password;
 
-// generate a JWT token
-const token = generateToken(user);
+    // generate a JWT token
+    const token = generateToken(user);
 
-// return the token
-res.json({ token: token });    
+    // return the token
+    res.json({ token: token });
   } catch (err) {
     res.status(400).json({ message: err.message });
   } finally {
     await db.client.close();
   }
 });
-router.post('/api/upload',  async function (req, res) {
+router.post('/api/upload', async function (req, res) {
   try {
     // Get the file
     const file = req.file;
@@ -87,27 +87,61 @@ router.post('/api/login/staff', async function (req, res, next) {
     let id = parseInt(req.body.sid)
 
     // check if the user exists
-    var user = await db.collection("staff").findOne({ sid: id});
+    var user = await db.collection("staff").findOne({ sid: id });
     if (!user) {
       res.status(401).json({ message: 'Staff not found' });
       return;
     }
 
-// res.json(user);
+    // res.json(user);
 
-delete user.password;
+    delete user.password;
 
-// generate a JWT token
-const token = generateToken(user);
+    // generate a JWT token
+    const token = generateToken(user);
 
-// return the token
-res.json({ token: token });    
+    // return the token
+    res.json({ token: token });
   } catch (err) {
     res.status(400).json({ message: err.message });
   } finally {
     await db.client.close();
   }
 });
+// Google Geocoding API endpoint
+const axios = require('axios'); // Add this at the top
+
+router.post('/geocode', async (req, res) => {
+  const { address } = req.body;
+
+  if (!address) {
+    return res.status(400).send({ error: 'Address is required' });
+  }
+
+  const apiKey = "AIzaSyC6obl69gbCEXgEwtskMIq66R337AOMKCY";
+  const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${apiKey}`;
+
+  try {
+    const response = await axios.get(url);
+    const data = response.data;
+
+    if (data.status === 'OK') {
+      const result = data.results[0];
+      const location = {
+        lat: result.geometry.location.lat,
+        lng: result.geometry.location.lng,
+        formatted_address: result.formatted_address,
+      };
+      res.send(location);
+    } else {
+      res.status(404).send({ error: 'Location not found' });
+    }
+  } catch (error) {
+    console.error('Error fetching data from Google Geocoding API:', error);
+    res.status(500).send({ error: 'An error occurred while fetching data' });
+  }
+});
+
 router.post('/send', async (req, res) => {
   const { token, title, body } = req.body; // Get FCM token and message details from request
 
