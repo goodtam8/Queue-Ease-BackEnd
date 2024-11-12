@@ -37,6 +37,23 @@ router.post('/api/login', upload.single('file'), async function (req, res, next)
     await db.client.close();
   }
 });
+router.get('/rest', async function (req, res) {
+  const db = await connectToDB();
+  try {
+      console.log("hi");
+      let query = {};
+
+      let result = await db.collection("restaurant").find(query).toArray();
+
+      res.json({ restaurants: result });
+  } catch (err) {
+      res.status(400).json({ message: err.message });
+  }
+  finally {
+      await db.client.close();
+  }
+});
+
 
 router.post('/api/login/user', async function (req, res, next) {
   const db = await connectToDB();

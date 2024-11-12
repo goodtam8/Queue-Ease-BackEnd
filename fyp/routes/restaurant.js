@@ -5,6 +5,7 @@ var passport = require('passport');
 const admin = require('../routes/firebase');
 
 
+const axios = require('axios'); // Add this at the top
 
 
 // New restaurant
@@ -29,6 +30,30 @@ router.post('/', passport.authenticate('bearer', { session: false }), async func
             '7+ people': 100,
         }
         let history = await db.collection("dining").insertOne(historicaldata);
+        const  address  = req.body.location;
+
+        if (!address) {
+            return res.status(400).send({ error: 'Address is required' });
+        }
+
+        const apiKey = "AIzaSyC6obl69gbCEXgEwtskMIq66R337AOMKCY";
+        const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${apiKey}`;
+
+
+        const response = await axios.get(url);
+        const data = response.data;
+
+        if (data.status === 'OK') {
+            const final = data.results[0];
+
+            req.body.lat = final.geometry.location.lat;
+            req.body.lng = final.geometry.location.lng;
+            req.body.location = final.formatted_address;
+
+
+        } else {
+            res.status(404).send({ error: 'Location not found' });
+        }
 
 
 
@@ -143,6 +168,31 @@ router.put('/:id', async function (req, res) {
     const db = await connectToDB();
     try {
         let resu = await db.collection("restaurant").findOne({ _id: new ObjectId(req.params.id) });
+        console.log(req.body.location)
+        const  address  = req.body.location;
+
+        if (!address) {
+            return res.status(400).send({ error: 'Address is required' });
+        }
+
+        const apiKey = "AIzaSyC6obl69gbCEXgEwtskMIq66R337AOMKCY";
+        const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${apiKey}`;
+
+
+        const response = await axios.get(url);
+        const data = response.data;
+
+        if (data.status === 'OK') {
+            const final = data.results[0];
+
+            req.body.lat = final.geometry.location.lat;
+            req.body.lng = final.geometry.location.lng;
+            req.body.location = final.formatted_address;
+
+
+        } else {
+            res.status(404).send({ error: 'Location not found' });
+        }
 
         delete req.body._id
         req.body.outside = parseInt(req.body.outside) == 1;
@@ -167,22 +217,6 @@ router.put('/:id', async function (req, res) {
 
 
 //get all the course without pagination 
-router.get('/rest/all', async function (req, res) {
-    const db = await connectToDB();
-    try {
-        console.log("hi");
-        let query = {};
-
-        let result = await db.collection("restaurant").find(query).toArray();
-
-        res.json({ restaurants: result });
-    } catch (err) {
-        res.status(400).json({ message: err.message });
-    }
-    finally {
-        await db.client.close();
-    }
-});
 
 
 
