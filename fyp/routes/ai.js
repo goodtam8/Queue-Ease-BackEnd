@@ -12,10 +12,9 @@ const endpointUrl = "https://genai.hkbu.edu.hk/general/rest/deployments/gpt-35-t
 router.post('/', async (req, res) => {
     const userMessage = req.body.message; // Get the user's message from the request body
     const db = await connectToDB();
-
     try {
         const restaurantInfo = await handleUserMessage(userMessage, db);
-        
+
         // Prepare the messages array as per the API's expected format
         const messages = [
             {
@@ -45,40 +44,61 @@ router.post('/', async (req, res) => {
         });
     } catch (error) {
         console.error('Error processing request:', error);
-        res.status(500).json({ error: 'Failed to process request' });
+        
+        // Send a specific error message to the frontend
+        res.status(500).json({
+            error: "I'm here to help with questions about our restaurant. You can ask me about our menu, hours, location, reservations, or the type of restaurant. For other inquiries, please contact our support team."
+        });
     }
 });
-// Function to handle user messages and determine the appropriate response
 async function handleUserMessage(userMessage, db) {
     const relevantKeywords = ['menu', 'hours', 'location', 'reservation', 'contact', 'type', 'cuisine', 'restaurant'];
     const isRelevant = relevantKeywords.some(keyword => userMessage.toLowerCase().includes(keyword));
 
-    // Patterns for different types of queries
+    // Updated patterns for different types of queries
     const addressPattern = /address|location|find.at|where.located/i;
     const isAddressQuery = addressPattern.test(userMessage);
 
-    const typePattern = /what type of restaurant|what cuisine|is it a (.+) restaurant|type of restaurant/i;
-    const isTypeQuery = typePattern.test(userMessage);
+    // Enhanced type pattern to catch more variations
+    const typePattern = /what type of restaurant|what cuisine|is it a (.+) restaurant|type of restaurant|restaurant with type|restaurant type|(.+) restaurant|(.+) cuisine/i;
+    const isTypeQuery = typePattern.test(userMessage) || 
+                       /(thai|japanese|italian|chinese|mexican|indian|cafe|bistro)/i.test(userMessage);
+
+    const menuPattern = /menu|dishes|food items/i;
+    const isMenuQuery = menuPattern.test(userMessage);
 
     const openTimePattern = /are you open|what are your hours|is it open now|when do you close|open hours/i;
     const isOpenTimeQuery = openTimePattern.test(userMessage);
 
     let restaurantInfo;
 
-    if (isOpenTimeQuery) {
-        restaurantInfo = await getOpenRestaurants(db);
-    } else if (isAddressQuery) {
-        restaurantInfo = await getRestaurantByAddress(userMessage, db);
-    } else if (isTypeQuery) {
-        restaurantInfo = await getRestaurantByType(userMessage, db);
-    } else if (!isRelevant) {
-        throw new Error("I'm here to help with questions about our restaurant. You can ask me about our menu, hours, location, reservations, or the type of restaurant. For other inquiries, please contact our support team.");
-    } else {
-        restaurantInfo = await db.collection("restaurant").findOne({});
-    }
+    try {
+        if (isOpenTimeQuery) {
+            restaurantInfo = await getOpenRestaurants(db);
+            console.log("Processing open time query");
+        } else if (isAddressQuery) {
+            console.log("Processing address query");
+            restaurantInfo = await getRestaurantByAddress(userMessage, db);
+        } else if (isTypeQuery) {
+            console.log("Processing type query");
+            restaurantInfo = await getRestaurantByType(userMessage, db);
+        } else if (isMenuQuery) {
+            console.log("Processing menu query");
+            restaurantInfo = await getMenuDetails(db);
+        } else if (!isRelevant) {
+            throw new Error("I'm here to help with questions about our restaurant. You can ask me about our menu, hours, location, reservations, or the type of restaurant. For other inquiries, please contact our support team.");
+        } else {
+            console.log('Processing general query');
+            restaurantInfo = await db.collection("restaurant").findOne({});
+        }
 
-    return restaurantInfo;
+        return restaurantInfo;
+    } catch (error) {
+        console.error('Error in handleUserMessage:', error);
+        throw error;
+    }
 }
+
 async function getOpenRestaurants(db) {
     const currentTime = new Date();
     const currentHour = currentTime.getHours();
@@ -121,15 +141,35 @@ async function getRestaurantByAddress(userMessage, db) {
     }
 }
 
-// Function to get restaurant information by type
 async function getRestaurantByType(userMessage, db) {
+    // Create a mapping object for common variations
+    const typeMapping = {
+        'thai': ['thai', 'thailand'],
+        'japanese': ['japanese', 'japan'],
+        'italian': ['italian', 'italy'],
+        'chinese': ['chinese', 'china'],
+        'mexican': ['mexican', 'mexico'],
+        'indian': ['indian', 'india'],
+        'cafe': ['cafe', 'café'],
+        'bistro': ['bistro']
+    };
+
+    // Extract the type from user message
     const typeMatch = userMessage.match(/(japanese|thai|italian|chinese|mexican|indian|cafe|bistro)/i);
-    const type = typeMatch ? typeMatch[1].toLowerCase() : '';
+    const userType = typeMatch ? typeMatch[1].toLowerCase() : '';
 
     try {
-        const restaurantInfo = await db.collection("restaurant").findOne({ type: new RegExp(type, 'i') });
+        // Create a query that matches any of the variations for the requested type
+        let query = {};
+        if (userType && typeMapping[userType]) {
+            query.type = { $in: typeMapping[userType].map(t => new RegExp(t, 'i')) };
+        }
+
+        const restaurantInfo = await db.collection("restaurant").findOne(query);
+        console.log(restaurantInfo);
+        
         if (!restaurantInfo) {
-            throw new Error(`Sorry, I couldn't find any restaurant of type "${type}". Please try asking about another type.`);
+            throw new Error(`Sorry, I couldn't find any restaurant of type "${userType}". Please try asking about another type.`);
         }
         return restaurantInfo;
     } catch (error) {
