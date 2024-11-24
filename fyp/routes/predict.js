@@ -63,7 +63,7 @@ router.get('/:name', async (req, res) => {
 });
 
 
-
+//predict waiting time for each customer 
 router.get('/:name/:id/time', async (req, res) => {
   const db = await connectToDB();
 

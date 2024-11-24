@@ -4,8 +4,8 @@ const express = require('express');
 const axios = require('axios');
 const { connectToDB, ObjectId } = require('../utils/db');
 const router = express.Router();
+//no menu to find
 
-// Replace with your Azure AI API key
 const apiKey = "9f81b190-947e-4321-8a52-53268aedc900";
 const endpointUrl = "https://genai.hkbu.edu.hk/general/rest/deployments/gpt-35-turbo/chat/completions?api-version=2024-02-01";
 
@@ -23,7 +23,7 @@ router.post('/', async (req, res) => {
             },
             {
                 role: "system",
-                content: `Here is the restaurant information: ${JSON.stringify(restaurantInfo)}` // Include restaurant info
+                content: `Here is the restaurant information: ${JSON.stringify(restaurantInfo)}.` // Include restaurant info
             }
         ];
 
@@ -51,21 +51,19 @@ router.post('/', async (req, res) => {
         });
     }
 });
+
+
 async function handleUserMessage(userMessage, db) {
+    //create pattern of text for detect which query match the pattern mentioned below
     const relevantKeywords = ['menu', 'hours', 'location', 'reservation', 'contact', 'type', 'cuisine', 'restaurant'];
     const isRelevant = relevantKeywords.some(keyword => userMessage.toLowerCase().includes(keyword));
 
-    // Updated patterns for different types of queries
     const addressPattern = /address|location|find.at|where.located/i;
     const isAddressQuery = addressPattern.test(userMessage);
 
-    // Enhanced type pattern to catch more variations
     const typePattern = /what type of restaurant|what cuisine|is it a (.+) restaurant|type of restaurant|restaurant with type|restaurant type|(.+) restaurant|(.+) cuisine/i;
     const isTypeQuery = typePattern.test(userMessage) || 
                        /(thai|japanese|italian|chinese|mexican|indian|cafe|bistro)/i.test(userMessage);
-
-    const menuPattern = /menu|dishes|food items/i;
-    const isMenuQuery = menuPattern.test(userMessage);
 
     const openTimePattern = /are you open|what are your hours|is it open now|when do you close|open hours/i;
     const isOpenTimeQuery = openTimePattern.test(userMessage);
@@ -82,14 +80,11 @@ async function handleUserMessage(userMessage, db) {
         } else if (isTypeQuery) {
             console.log("Processing type query");
             restaurantInfo = await getRestaurantByType(userMessage, db);
-        } else if (isMenuQuery) {
-            console.log("Processing menu query");
-            restaurantInfo = await getMenuDetails(db);
         } else if (!isRelevant) {
             throw new Error("I'm here to help with questions about our restaurant. You can ask me about our menu, hours, location, reservations, or the type of restaurant. For other inquiries, please contact our support team.");
         } else {
             console.log('Processing general query');
-            restaurantInfo = await db.collection("restaurant").findOne({});
+            restaurantInfo = await db.collection("restaurant").find({}).toArray();
         }
 
         return restaurantInfo;
