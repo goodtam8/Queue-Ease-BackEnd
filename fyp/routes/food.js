@@ -106,28 +106,34 @@ router.get('/', async function (req, res) {
 
 
 //dropping a restaurant from a staff
-router.patch('/:name/:id/drop',async function(req,res){
+router.patch('/:name/:id/drop', async function(req, res) {
     const db = await connectToDB();
 
-    try{
-       
+    try {
+        // First, find the restaurant to get the current quota
+        const restaurant = await db.collection("restaurant").findOne({ _id: new ObjectId(req.params.id) });
+        
+        // Check if the restaurant was found
+        if (!restaurant) {
+            return res.status(404).json({ message: "Restaurant not found." });
+        }
+
+        // Use the found restaurant's quota
         let courseUpdate = await db.collection("restaurant").updateOne(
             { _id: new ObjectId(req.params.id) },
             { 
                 $pull: { menu: req.params.name },
-                $set: { quota: result.quota +1 } // Combine the operations in a single object
-
+                $set: { quota: restaurant.quota + 1 } // Use the quota from the restaurant
             }
         );
 
-        res.json({courseUpdate:courseUpdate})
-    }
-    catch (err) {
+        res.json({ courseUpdate: courseUpdate });
+    } catch (err) {
         res.status(400).json({ message: err.message });
     } finally {
         await db.client.close();
     }
-})
+});
 
 router.patch('/:id/:name/', async function (req, res) {
     const db = await connectToDB();
