@@ -253,6 +253,23 @@ router.get('/check/:name', async function (req, res) {
     }
 });
 
+//delete queue
+router.delete('/:id', async function (req, res) {
+    const db = await connectToDB();
+    try {
+
+        let result = await db.collection("queue").deleteOne({ _id: new ObjectId(req.params.id) });
 
 
+        if (result.deletedCount > 0) {
+            res.status(200).json({ message: "Queue deleted" });
+        } else {
+            res.status(404).json({ message: "Queue not found" });
+        }
+    } catch (err) {
+        res.status(400).json({ message: err.message });
+    } finally {
+        await db.client.close();
+    }
+});
 module.exports = router;
