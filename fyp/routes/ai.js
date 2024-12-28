@@ -6,15 +6,21 @@ const { connectToDB, ObjectId } = require('../utils/db');
 const router = express.Router();
 //no menu to find
 
-const apiKey = "9f81b190-947e-4321-8a52-53268aedc900";
-const endpointUrl = "https://genai.hkbu.edu.hk/general/rest/deployments/gpt-35-turbo/chat/completions?api-version=2024-02-01";
+const apiKey = "aace82ee-218a-424d-8c60-1b1c474376d7";
+const endpointUrl = "https://genai.hkbu.edu.hk/general/rest/deployments/gpt-4-o-mini/chat/completions?api-version=2024-02-01";
 
 router.post('/', async (req, res) => {
     const userMessage = req.body.message; // Get the user's message from the request body
     const db = await connectToDB();
     try {
         const restaurantInfo = await handleUserMessage(userMessage, db);
-
+        console.log(restaurantInfo)
+if(restaurantInfo===500){
+    res.status(200).json({
+        reply: "I'm here to help with questions about our restaurant. You can ask me about our menu, hours, location, reservations, or the type of restaurant. For other inquiries, please contact our support team."
+    });
+    return
+}
         // Prepare the messages array as per the API's expected format
         const messages = [
             {
@@ -47,7 +53,7 @@ router.post('/', async (req, res) => {
         
         // Send a specific error message to the frontend
         res.status(500).json({
-            error: "I'm here to help with questions about our restaurant. You can ask me about our menu, hours, location, reservations, or the type of restaurant. For other inquiries, please contact our support team."
+            reply: "I'm here to help with questions about our restaurant. You can ask me about our menu, hours, location, reservations, or the type of restaurant. For other inquiries, please contact our support team."
         });
     }
 });
@@ -81,7 +87,8 @@ async function handleUserMessage(userMessage, db) {
             console.log("Processing type query");
             restaurantInfo = await getRestaurantByType(userMessage, db);
         } else if (!isRelevant) {
-            throw new Error("I'm here to help with questions about our restaurant. You can ask me about our menu, hours, location, reservations, or the type of restaurant. For other inquiries, please contact our support team.");
+            
+return 500
         } else {
             console.log('Processing general query');
             restaurantInfo = await db.collection("restaurant").find({}).toArray();
