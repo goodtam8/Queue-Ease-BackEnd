@@ -58,6 +58,11 @@ if(restaurantInfo===500){
     }
 });
 
+router.post('/anaylsis', async (req, res) => {
+
+
+});
+
 
 async function handleUserMessage(userMessage, db) {
     //create pattern of text for detect which query match the pattern mentioned below

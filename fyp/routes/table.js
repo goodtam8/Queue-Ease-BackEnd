@@ -50,6 +50,35 @@ router.get('/:name/status', async function (req, res) {
         await db.client.close();
     }
 });
+// Get the total number of bookings per restaurant and status
+router.get('/stats/restaurant', async function (req, res) {
+    const db = await connectToDB();
+    try {
+        let result = await db.collection("table").aggregate([
+            // Non-null restaurant name
+            { $match: { belong: { $ne: null } } },
+            // Group by restaurant name and status
+            {
+                $group: {
+                    _id: {
+                        belong: "$belong",
+                        status: "$status" // Assuming 'status' field contains 'free' or 'available'
+                    },
+                    total: { $sum: 1 }
+                }
+            }
+        ]).toArray();
+
+
+
+        res.json(result);
+    } catch (err) {
+        res.status(400).json({ message: err.message });
+    } finally {
+        await db.client.close();
+    }
+})
+
 
 
 // Update a single table status
@@ -101,27 +130,30 @@ router.put('/:id/free', async (req, res) => {
         let partySize = '1-2 people';
 
         if (table.type != null) {
-             partySize = table.type ?? '1-2 people';
+            partySize = table.type ?? '1-2 people';
 
         }
-     
+
 
         const currentAvgDiningTime = historicalData[`${partySize}`] || 0;
         const currentCount = 100;
 
         const newAvgDiningTime = ((currentAvgDiningTime * currentCount) + diningDuration) / (currentCount + 1);
-       
+
         await db.collection("dining").updateOne(
             { belong: table.belong },
-            { $set: {[partySize]:newAvgDiningTime
-                
-            } }
-          );
-          
+            {
+                $set: {
+                    [partySize]: newAvgDiningTime
+
+                }
+            }
+        );
+
 
         req.body.occupiedSince = null;
         // Update table status to free
-        await db.collection("table").updateOne({ _id: new ObjectId(tableId) },{$set:req.body} );
+        await db.collection("table").updateOne({ _id: new ObjectId(tableId) }, { $set: req.body });
 
         res.status(200).json({ message: "Table updated to available" });
     } catch (error) {
