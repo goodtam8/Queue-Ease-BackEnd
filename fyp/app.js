@@ -25,6 +25,8 @@ var queuerouter=require('./routes/queue')
 var predict=require('./routes/predict');
 var gpt=require('./routes/ai')
 var app = express();
+var receiptrouter=require('./routes/receipt')
+var diningrecordrouter=require('./routes/dining');
 process.env.TOKEN_SECRET = 'secret';
 
 // view engine setup
@@ -47,6 +49,9 @@ app.use('/api/food', foodrouter); // around line 25
 app.use('/api/table',tablerouter);
 app.use('/api/queue',queuerouter);
 app.use('/api/predict',predict)
+app.use('/api/record',diningrecordrouter)
+app.use('/api/receipt',receiptrouter)
+
 
 
 

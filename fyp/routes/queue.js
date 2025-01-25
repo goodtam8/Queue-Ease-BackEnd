@@ -232,6 +232,44 @@ router.put('/:name/add', async function (req, res) {
         await db.client.close();
     }
 });
+router.delete('/:name/leave/:customerId', async function (req, res) {
+    const db = await connectToDB();
+    try {
+        const name = req.params.name; // Get the restaurant name from the URL parameters
+        const customerId = req.params.customerId; // Get the customer ID from the URL parameters
+
+        // Find the queue for the restaurant
+        const queue = await db.collection("queue").findOne({ restaurantName: name });
+        if (!queue) {
+            return res.status(404).json({ message: "Queue not found" });
+        }
+
+        // Check if the customer is in the queue
+        const customerIndex = queue.queueArray.findIndex(customer => customer.customerId === customerId);
+        if (customerIndex === -1) {
+            return res.status(404).json({ message: "Customer not found in the queue" });
+        }
+
+        // Remove the customer from the queue
+        await db.collection("queue").updateOne(
+            { restaurantName: name },
+            { $pull: { queueArray: { customerId: customerId } } }
+        );
+
+        await db.collection("queue").updateOne(
+            { restaurantName: name },
+            { $inc: { "queueArray.$[elem].queueNumber": -1 } },
+            { arrayFilters: [{ "elem.queueNumber": { $gt: queue.queueArray[customerIndex].queueNumber } }] }
+        );
+
+        res.status(200).json({ message: "Customer removed from the queue successfully" });
+    } catch (err) {
+        res.status(400).json({ message: err.message });
+    } finally {
+        await db.client.close();
+    }
+});
+
 
 router.get('/check/:name', async function (req, res) {
     const db = await connectToDB();
