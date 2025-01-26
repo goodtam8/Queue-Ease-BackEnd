@@ -74,10 +74,12 @@ router.get('/:id/search/:name', async function (req, res) {
     const db = await connectToDB();
     try {
         const customerId = req.params.id;
+        let result3 = await db.collection("restaurant").findOne({ _id: new ObjectId(req.params.name) });
+
 
         // Query the database to check if the customerId exists in the queueArray
         const queueExists = await db.collection("queue").findOne({
-            "restaurantName":req.params.name,
+            "restaurantName":result3.name,
             "queueArray": {
                 $elemMatch: { customerId: customerId }
             }

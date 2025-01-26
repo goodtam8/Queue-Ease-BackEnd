@@ -17,8 +17,23 @@ router.post('/', async function (req, res) {
         await db.client.close();
     }
 });
+router.get('/:rid/all', async function (req, res) {
+    const db = await connectToDB();
+    try {
+    
 
-/* Retrieve a single staff */
+        let result = await db.collection("receipt").find({rid:req.params.rid}).toArray();
+
+        res.json({result});
+    } catch (err) {
+        res.status(400).json({ message: err.message });
+    }
+    finally {
+        await db.client.close();
+    }
+});
+
+/* Retrieve a single recept */
 router.get('/:id', async function (req, res) {
     const db = await connectToDB();
     try {
@@ -34,6 +49,7 @@ router.get('/:id', async function (req, res) {
         await db.client.close();
     }
 });
+
 
 //get all receipt by using the dining record id 
 
