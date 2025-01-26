@@ -69,6 +69,33 @@ router.get('/:id/verify', async function (req, res) {
         await db.client.close();
     }
 });
+// get back the customer take queue in the restuarant 
+router.get('/:id/search/:name', async function (req, res) {
+    const db = await connectToDB();
+    try {
+        const customerId = req.params.id;
+
+        // Query the database to check if the customerId exists in the queueArray
+        const queueExists = await db.collection("queue").findOne({
+            "restaurantName":req.params.name,
+            "queueArray": {
+                $elemMatch: { customerId: customerId }
+            }
+        });
+
+        if (queueExists) {
+            const foundTableByName = queueExists.queueArray.find(customer => customer.customerId === customerId);
+
+            return res.status(200).json(foundTableByName.rid); // Return true if a queue exists
+        } else {
+            return res.status(404).json({ exists: "Not found" }); // Return false if no queue exists
+        }
+    } catch (err) {
+        res.status(400).json({ message: err.message });
+    } finally {
+        await db.client.close();
+    }
+});
 
 // update the user check in 
 router.patch('/:id/:name/checkin', async function (req, res) {
@@ -193,7 +220,7 @@ router.put('/:name/add', async function (req, res) {
     const db = await connectToDB();
     try {
         const name = req.params.name; // Get the queue ID from the URL parameters
-        let { customerId, numberOfPeople } = req.body; // Get customer details from the request body
+        let { customerId, numberOfPeople, rid } = req.body; // Get customer details from the request body
         customerId = customerId.toString();
 
 
@@ -217,6 +244,7 @@ router.put('/:name/add', async function (req, res) {
             customerId,
             numberOfPeople,
             queueNumber,
+            rid
         };
 
         // Update the queue by adding the new customer to the queueArray

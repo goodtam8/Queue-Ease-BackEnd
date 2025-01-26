@@ -35,11 +35,11 @@ router.post('/', async (req, res) => {
 
         const response = await axios.post(endpointUrl, {
             messages: messages, // Send the messages array
-            temperature: 0 // Set the temperature as per your requirement
+            temperature: 0 // Set the temperature as per  requirement
         }, {
             headers: {
                 'accept': 'application/json',
-                'api-key': apiKey, // Use your API key for authorization
+                'api-key': apiKey, // Use  API key for authorization
                 'Content-Type': 'application/json'
             }
         });
@@ -78,7 +78,7 @@ router.post('/analysis', async (req, res) => {
         }, {
             headers: {
                 'accept': 'application/json',
-                'api-key': apiKey, // Use your API key for authorization
+                'api-key': apiKey, // UseAPI key for authorization
                 'Content-Type': 'application/json'
             }
         });

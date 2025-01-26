@@ -24,13 +24,14 @@ router.put('/:id', async function (req, res) {
     }
 });
 // New receipt record
+
 router.post('/', async function (req, res) {
     const db = await connectToDB();
     try {
         req.body.createdAt = new Date();
 
         let result = await db.collection("dinerecord").insertOne(req.body);
-        res.status(201).json({ id: result.insertedId });
+        res.status(201).json(result.insertedId);
     } catch (err) {
         res.status(400).json({ message: err.message });
     } finally {
@@ -51,6 +52,23 @@ router.get('/:id', async function (req, res) {
             res.json(result);   
         } else {
             res.status(404).json({ message: "dining record not found" });
+        }
+    } catch (err) {
+        res.status(400).json({ message: err.message });
+    } finally {
+        await db.client.close();
+    }
+});
+// Delete a single Booking
+router.delete('/:id', async function (req, res) {
+    const db = await connectToDB();
+    try {
+        let result = await db.collection("dinerecord").deleteOne({ _id: new ObjectId(req.params.id) });
+
+        if (result.deletedCount > 0) {
+            res.status(200).json({ message: "Record deleted" });
+        } else {
+            res.status(404).json({ message: "Record not found" });
         }
     } catch (err) {
         res.status(400).json({ message: err.message });
