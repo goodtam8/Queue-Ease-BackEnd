@@ -74,7 +74,7 @@ router.post('/analysis', async (req, res) => {
 
         const response = await axios.post(endpointUrl, {
             messages: messages, // Send the messages array
-            temperature: 0 // Set the temperature as per your requirement
+            temperature: 0 
         }, {
             headers: {
                 'accept': 'application/json',
