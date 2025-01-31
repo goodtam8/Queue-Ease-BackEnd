@@ -79,7 +79,7 @@ router.get('/:id/search/:name', async function (req, res) {
 
         // Query the database to check if the customerId exists in the queueArray
         const queueExists = await db.collection("queue").findOne({
-            "restaurantName":result3.name,
+            "restaurantName": result3.name,
             "queueArray": {
                 $elemMatch: { customerId: customerId }
             }
@@ -98,6 +98,14 @@ router.get('/:id/search/:name', async function (req, res) {
         await db.client.close();
     }
 });
+router.get('/:id/:name/checkout', async function (req, res) {
+    const db = await connectToDB();
+
+    const queuerecord = await db.collection("queue").findOne({ restaurantName: req.params.name })
+    const result = queuerecord.queueArray.filter(table => table.customerId === req.params.id)
+    console.log(result);
+
+})
 
 // update the user check in 
 router.patch('/:id/:name/checkin', async function (req, res) {
@@ -108,6 +116,8 @@ router.patch('/:id/:name/checkin', async function (req, res) {
         console.log(customerId);
 
         // Query the database to check if the customerId exists in the queueArray
+        //set the table too
+        const queuerecord = await db.collection("queue").findOne({ restaurantName: req.params.name })
         const queueExists = await db.collection("queue").updateOne(
             {
                 "queueArray": {
@@ -146,7 +156,7 @@ router.put('/:id', async function (req, res) {
             return res.status(407).json({ message: "You have update the queue number exceed the limit" });
 
         }
-      
+
 
 
         // Update the queue's current position
@@ -158,17 +168,17 @@ router.put('/:id', async function (req, res) {
         if (result.modifiedCount === 0) {
             return res.status(404).json({ message: "Queue not found or position unchanged" });
         }
-  //find the db to in customer using the queue array index  to get the customer id when getting device token 
+        //find the db to in customer using the queue array index  to get the customer id when getting device token 
         //send the message  using that token 
-        const queue=await db.collection("queue").findOne(
+        const queue = await db.collection("queue").findOne(
             { _id: new ObjectId(queueId) }, // Filter by queue ID
-              // Update the current position
+            // Update the current position
         );
-        console.log(queue.queueArray[newPosition-1].customerId)
-        const id=queue.queueArray[newPosition-1].customerId
-        const customer=await db.collection("customer").findOne({_id:new ObjectId(id)})
+        console.log(queue.queueArray[newPosition - 1].customerId)
+        const id = queue.queueArray[newPosition - 1].customerId
+        const customer = await db.collection("customer").findOne({ _id: new ObjectId(id) })
         const messagesend = {
-            token:customer.fcm,
+            token: customer.fcm,
             notification: {
                 title: `Queue message from ${queue.restaurantName}`,
                 body: "It is your turn now. Please come to us for check in "
@@ -188,9 +198,9 @@ router.put('/:id', async function (req, res) {
                 }
             }
         };
-    
-       
-            const response = await admin.messaging().send(messagesend);
+
+
+        const response = await admin.messaging().send(messagesend);
 
         res.status(200).json({ message: "Queue position updated successfully" });
     } catch (err) {
