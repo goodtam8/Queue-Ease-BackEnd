@@ -98,14 +98,17 @@ router.get('/:id/search/:name', async function (req, res) {
         await db.client.close();
     }
 });
-router.get('/:id/:name/checkout', async function (req, res) {
-    const db = await connectToDB();
+//template for checked in and out 
+// router.get('/:id/:name/checkout', async function (req, res) {
+//     const db = await connectToDB();
 
-    const queuerecord = await db.collection("queue").findOne({ restaurantName: req.params.name })
-    const result = queuerecord.queueArray.filter(table => table.customerId === req.params.id)
-    console.log(result);
+//     const queuerecord = await db.collection("queue").findOne({ restaurantName: req.params.name })
+//     const result = queuerecord.queueArray.filter(table => table.customerId === req.params.id)
+//     let result2 = await db.collection("dinerecord").updateOne({ _id: new ObjectId(result[0].rid) }, { $set:{ "status": "checked" }});
 
-})
+//     console.log(result[0].rid);
+
+// })
 
 // update the user check in 
 router.patch('/:id/:name/checkin', async function (req, res) {
@@ -129,9 +132,15 @@ router.patch('/:id/:name/checkin', async function (req, res) {
                 $set: { "queueArray.$.checkInTime": new Date() }
             }
         )
+        const result = queuerecord.queueArray.filter(table => table.customerId === req.params.id)
+        //update record status
+        let result2 = await db.collection("dinerecord").updateOne({ _id: new ObjectId(result[0].rid) }, { $set: { "status": "checked" } });
+        //assign table to them 
+        const table=await db.collection("table").updateOne({ status: "available", belong: req.params.name }, { $set: { "status": "in used", "rid": result[0].rid } });
+
         console.log(queueExists);
 
-        if (queueExists.modifiedCount > 0) {
+        if (queueExists.modifiedCount > 0|| table.modifiedCount >0) {
             res.status(200).json({ message: "Customer checked in successfully" });
         } else {
             res.status(404).json({ message: "Customer not found in queue" });

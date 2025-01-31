@@ -103,6 +103,7 @@ router.put('/:id/occupied', async function (req, res) {
     }
 });
 //update average dineing time 
+//check out 
 router.put('/:id/free', async (req, res) => {
     const db = await connectToDB();
 
@@ -149,6 +150,9 @@ router.put('/:id/free', async (req, res) => {
                 }
             }
         );
+        if (table.rid) {
+            await db.collection("dinerecord").updateOne({ _id: new ObjectId(table.rid) }, { $set: { "status": "checked out" } });
+        }
 
 
         req.body.occupiedSince = null;
