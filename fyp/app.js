@@ -23,6 +23,7 @@ var foodrouter = require('./routes/food'); // around line 9
 var tablerouter=require('./routes/table')
 var queuerouter=require('./routes/queue')
 var predict=require('./routes/predict');
+
 var gpt=require('./routes/ai')
 var app = express();
 var receiptrouter=require('./routes/receipt')

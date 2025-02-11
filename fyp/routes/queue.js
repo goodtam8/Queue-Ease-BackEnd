@@ -58,6 +58,7 @@ router.get('/:id/verify', async function (req, res) {
             }
         }).toArray();
 
+
         if (queueExists.length > 0) {
             return res.status(200).json({ exists: queueExists }); // Return true if a queue exists
         } else {
@@ -136,11 +137,11 @@ router.patch('/:id/:name/checkin', async function (req, res) {
         //update record status
         let result2 = await db.collection("dinerecord").updateOne({ _id: new ObjectId(result[0].rid) }, { $set: { "status": "checked" } });
         //assign table to them 
-        const table=await db.collection("table").updateOne({ status: "available", belong: req.params.name }, { $set: { "status": "in used", "rid": result[0].rid } });
+        const table = await db.collection("table").updateOne({ status: "available", belong: req.params.name }, { $set: { "status": "in used", "rid": result[0].rid } });
 
         console.log(queueExists);
 
-        if (queueExists.modifiedCount > 0|| table.modifiedCount >0) {
+        if (queueExists.modifiedCount > 0 || table.modifiedCount > 0) {
             res.status(200).json({ message: "Customer checked in successfully" });
         } else {
             res.status(404).json({ message: "Customer not found in queue" });
@@ -186,6 +187,114 @@ router.put('/:id', async function (req, res) {
         console.log(queue.queueArray[newPosition - 1].customerId)
         const id = queue.queueArray[newPosition - 1].customerId
         const customer = await db.collection("customer").findOne({ _id: new ObjectId(id) })
+        //add a loop
+        //if newposition+1, +2,+3,+4 <array.length, send notification
+        if (queue.queueArray.length - newPosition == 0) {//last element
+
+
+        }
+        else if (queue.queueArray.length - newPosition == 1) {
+            const othercustomer = await db.collection("customer").findOne({ _id: queue.queueArray[newPosition].customerId })
+
+            const messagesend = {
+                token: othercustomer.fcm,
+                notification: {
+                    title: `Queue message from ${queue.restaurantName}`,
+                    body: "Next table is you . Please come to us for check in "
+                },
+                data: {
+                    key1: "value1",
+                    key2: "value2"
+                },
+                android: {
+                    priority: "high"
+                },
+                apns: {
+                    payload: {
+                        aps: {
+                            badge: 42
+                        }
+                    }
+                }
+            };
+
+
+            const response = await admin.messaging().send(messagesend);
+        }
+        else if (queue.queueArray.length - newPosition == 2) {
+            const count = 0
+
+            for (let i = queue.queueArray[newPosition]; i < queue.queueArray.length; i++) {
+                const othercustomer = await db.collection("customer").findOne({ _id: queue.queueArray[i].customerId })
+
+                if (count === 2) {
+                    break;
+                }
+                const messagesend = {
+                    token: othercustomer.fcm,
+                    notification: {
+                        title: `Queue message from ${queue.restaurantName}`,
+                        body: "Next two table is you . Please come to us for check in "
+                    },
+                    data: {
+                        key1: "value1",
+                        key2: "value2"
+                    },
+                    android: {
+                        priority: "high"
+                    },
+                    apns: {
+                        payload: {
+                            aps: {
+                                badge: 42
+                            }
+                        }
+                    }
+                };
+
+
+                const response = await admin.messaging().send(messagesend);
+                count++
+
+            }
+        }
+        else if (queue.queueArray.length - newPosition == 3) {
+
+            const count = 0;
+            for (let i = queue.queueArray[newPosition]; i < queue.queueArray.length; i++) {
+                const othercustomer = await db.collection("customer").findOne({ _id: queue.queueArray[i].customerId })
+
+                if (count === 3) {
+                    break;
+                }
+                const messagesend = {
+                    token: othercustomer.fcm,
+                    notification: {
+                        title: `Queue message from ${queue.restaurantName}`,
+                        body: "Next three table is you . Please come to us for check in"
+                    },
+                    data: {
+                        key1: "value1",
+                        key2: "value2"
+                    },
+                    android: {
+                        priority: "high"
+                    },
+                    apns: {
+                        payload: {
+                            aps: {
+                                badge: 42
+                            }
+                        }
+                    }
+                };
+
+
+                const response = await admin.messaging().send(messagesend);
+                count++;
+                console.log(i);
+            }
+        }
         const messagesend = {
             token: customer.fcm,
             notification: {
