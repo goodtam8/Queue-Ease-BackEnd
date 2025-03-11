@@ -4,7 +4,17 @@ const express = require('express');
 const axios = require('axios');
 const { connectToDB, ObjectId } = require('../utils/db');
 const router = express.Router();
-//no menu to find
+const tf = require('@tensorflow/tfjs-node'); // Import TensorFlow.js for Node.js
+// Load the TensorFlow.js model
+let model;
+async function loadModel() {
+    try {
+        model = await tf.loadLayersModel('file://./model.json'); // Adjust path if needed
+        console.log('Model loaded successfully.');
+    } catch (error) {
+        console.error('Error loading the model:', error);
+    }
+}//no menu to find
 
 const apiKey = "aace82ee-218a-424d-8c60-1b1c474376d7";
 const endpointUrl = "https://genai.hkbu.edu.hk/general/rest/deployments/gpt-4-o-mini/chat/completions?api-version=2024-02-01";
@@ -97,6 +107,38 @@ router.post('/analysis', async (req, res) => {
     }
 
 });
+
+
+
+// Normalize input features using min and max values (from training)
+function normalizeInput(input, xsMin, xsMax) {
+    const inputTensor = tf.tensor2d([input]); // Convert input to a tensor
+    const normalizedInput = inputTensor.sub(xsMin).div(xsMax.sub(xsMin)); // Normalize input
+    return normalizedInput;
+}
+// API endpoint for predicting waiting time
+router.post('/predict', async (req, res) => {
+    await loadModel();
+    
+      // Assuming newFeatures is an array of 5 numbers
+      if (newFeatures.length !== 5) {
+        throw new Error('Input must have exactly 5 features.');
+    }
+
+    // Convert newFeatures to a tensor
+    const inputTensor = tf.tensor2d([newFeatures]);
+
+    // Normalize the input using the same min and max values from training
+    const normalizedInput = inputTensor.sub(xsMin).div(xsMax.sub(xsMin));
+
+    // Make a prediction
+    const prediction = model.predict(normalizedInput);
+    const predictedWaitingTime = await prediction.data(); // Get the predicted value
+
+    return predictedWaitingTime[0]; // Return the first element as the predicted waiting time
+});
+
+
 
 
 async function handleUserMessage(userMessage, db) {
