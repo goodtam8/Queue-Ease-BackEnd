@@ -1,20 +1,14 @@
 
 
 const express = require('express');
+const app = require('../app');
+const { trainAndSaveModel, predictWaitingTime } = require('../routes/linear');
+
 const axios = require('axios');
 const { connectToDB, ObjectId } = require('../utils/db');
 const router = express.Router();
 const tf = require('@tensorflow/tfjs-node'); // Import TensorFlow.js for Node.js
 // Load the TensorFlow.js model
-let model;
-async function loadModel() {
-    try {
-        model = await tf.loadLayersModel('file://./model.json'); // Adjust path if needed
-        console.log('Model loaded successfully.');
-    } catch (error) {
-        console.error('Error loading the model:', error);
-    }
-}//no menu to find
 
 const apiKey = "aace82ee-218a-424d-8c60-1b1c474376d7";
 const endpointUrl = "https://genai.hkbu.edu.hk/general/rest/deployments/gpt-4-o-mini/chat/completions?api-version=2024-02-01";
@@ -84,7 +78,7 @@ router.post('/analysis', async (req, res) => {
 
         const response = await axios.post(endpointUrl, {
             messages: messages, // Send the messages array
-            temperature: 0 
+            temperature: 0
         }, {
             headers: {
                 'accept': 'application/json',
@@ -108,34 +102,67 @@ router.post('/analysis', async (req, res) => {
 
 });
 
+// Route to make predictions
+router.post('/predict', async (req, res) => {
+    try {
+        const { features } = req.body;
+        
+        // Validate input
+        if (!features || !Array.isArray(features) || features.length !== 5) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Invalid input: Please provide an array of 5 numerical features' 
+            });
+        }
+        
+        // Convert to numbers
+        const numericFeatures = features.map(f => parseFloat(f));
+        if (numericFeatures.some(isNaN)) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'All features must be valid numbers' 
+            });
+        }
+        
+        // Get prediction
+        const waitingTime = await predictWaitingTime(numericFeatures);
+        
+        res.status(200).json({
+            success: true,
+            waitingTime,
+            message: `Predicted waiting time: ${waitingTime.toFixed(2)}`
+        });
+    } catch (error) {
+        console.error('Prediction error:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Error making prediction', 
+            error: error.message 
+        });
+    }
+});
 
-
-// Normalize input features using min and max values (from training)
-function normalizeInput(input, xsMin, xsMax) {
-    const inputTensor = tf.tensor2d([input]); // Convert input to a tensor
-    const normalizedInput = inputTensor.sub(xsMin).div(xsMax.sub(xsMin)); // Normalize input
-    return normalizedInput;
-}
 // API endpoint for predicting waiting time
 router.post('/predict', async (req, res) => {
-    await loadModel();
-    
-      // Assuming newFeatures is an array of 5 numbers
-      if (newFeatures.length !== 5) {
-        throw new Error('Input must have exactly 5 features.');
+    try {
+        const features = req.body.features;
+
+        // Validate input
+        if (!features || !Array.isArray(features) || features.length !== 5) {
+            return res.status(400).json({
+                error: 'Input must be an array of 5 numeric features'
+            });
+        }
+
+        // Make prediction
+        const waitingTime = await predictWaitingTime(features);
+
+        // Send response
+        res.json({ predicted_waiting_time: waitingTime });
+    } catch (error) {
+        console.error('Error during prediction:', error);
+        res.status(500).json({ error: 'An error occurred during prediction' });
     }
-
-    // Convert newFeatures to a tensor
-    const inputTensor = tf.tensor2d([newFeatures]);
-
-    // Normalize the input using the same min and max values from training
-    const normalizedInput = inputTensor.sub(xsMin).div(xsMax.sub(xsMin));
-
-    // Make a prediction
-    const prediction = model.predict(normalizedInput);
-    const predictedWaitingTime = await prediction.data(); // Get the predicted value
-
-    return predictedWaitingTime[0]; // Return the first element as the predicted waiting time
 });
 
 
