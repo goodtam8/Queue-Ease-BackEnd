@@ -30,7 +30,7 @@ router.post('/', passport.authenticate('bearer', { session: false }), async func
             '7+ people': 100,
         }
         let history = await db.collection("dining").insertOne(historicaldata);
-        const  address  = req.body.location;
+        const address = req.body.location;
 
         if (!address) {
             return res.status(400).send({ error: 'Address is required' });
@@ -169,7 +169,7 @@ router.put('/:id', async function (req, res) {
     try {
         let resu = await db.collection("restaurant").findOne({ _id: new ObjectId(req.params.id) });
         console.log(req.body.location)
-        const  address  = req.body.location;
+        const address = req.body.location;
 
         if (!address) {
             return res.status(400).send({ error: 'Address is required' });
@@ -251,24 +251,41 @@ router.get('/', async function (req, res) {
     }
 });
 
+const { ObjectId } = require('mongodb');
+
 router.delete('/:id', async function (req, res) {
-    const db = await connectToDB();
+    let db;
     try {
-        let result3 = await db.collection("restaurant").findOne({ _id: new ObjectId(req.params.id) });
+        // Validate ObjectId
+        if (!ObjectId.isValid(req.params.id)) {
+            return res.status(400).json({ message: "Invalid restaurant ID" });
+        }
 
-        let result = await db.collection("restaurant").deleteOne({ _id: new ObjectId(req.params.id) });
+        db = await connectToDB();
 
-        let result2 = await db.collection("table").deleteMany({ belong: result3.name });
+        // Find the restaurant
+        const restaurant = await db.collection("restaurant").findOne({ _id: new ObjectId(req.params.id) });
+        if (!restaurant) {
+            return res.status(404).json({ message: "Restaurant not found" });
+        }
 
-        if (result.deletedCount > 0) {
-            res.status(200).json({ message: "restaurant deleted" });
+        // Delete related tables
+        await db.collection("table").deleteMany({ belong: restaurant.name });
+
+        // Delete the restaurant
+        const deleteResult = await db.collection("restaurant").deleteOne({ _id: new ObjectId(req.params.id) });
+
+        if (deleteResult.deletedCount > 0) {
+            res.status(200).json({ message: "Restaurant deleted" });
         } else {
-            res.status(404).json({ message: "restaurant not found" });
+            res.status(404).json({ message: "Restaurant not found" });
         }
     } catch (err) {
         res.status(400).json({ message: err.message });
     } finally {
-        await db.client.close();
+        if (db) {
+            await db.client.close();
+        }
     }
 });
 
