@@ -75,9 +75,7 @@ router.get('/:id/search/:name', async function (req, res) {
     const db = await connectToDB();
     try {
         const customerId = req.params.id;
-        let result3 = await db.collection("restaurant").findOne({ _id: new ObjectId(req.params.name) });
-
-
+        let result3 = await db.collection("restaurant").findOne({ name: req.params.name });
         // Query the database to check if the customerId exists in the queueArray
         const queueExists = await db.collection("queue").findOne({
             "restaurantName": result3.name,
@@ -390,6 +388,7 @@ router.put('/:name/add', async function (req, res) {
         await db.client.close();
     }
 });
+//leave the queue
 router.delete('/:name/leave/:customerId', async function (req, res) {
     const db = await connectToDB();
     try {
@@ -398,6 +397,7 @@ router.delete('/:name/leave/:customerId', async function (req, res) {
 
         // Find the queue for the restaurant
         const queue = await db.collection("queue").findOne({ restaurantName: name });
+        
         if (!queue) {
             return res.status(404).json({ message: "Queue not found" });
         }
