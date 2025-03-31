@@ -21,7 +21,9 @@ router.get('/:name', async function (req, res) {
     } catch (err) {
         res.status(400).json({ message: err.message });
     } finally {
-        await db.client.close();
+        if (db && db.client) {
+            await db.client.close();
+        }
     }
 });
 // compare whether all table are busy or not to create a queue
