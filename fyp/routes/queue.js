@@ -57,6 +57,7 @@ router.get('/:id/verify', async function (req, res) {
                 $elemMatch: { customerId: customerId }
             }
         }).toArray();
+        console.log(queueExists)
 
 
         if (queueExists.length > 0) {
@@ -115,29 +116,46 @@ router.patch('/:id/:name/checkin', async function (req, res) {
     // later can make it complex to handle different condition
     try {
         const customerId = req.params.id;
-        console.log(customerId);
-
-        // Query the database to check if the customerId exists in the queueArray
-        //set the table too
-        const queuerecord = await db.collection("queue").findOne({ restaurantName: req.params.name })
+        const restaurantName = req.params.name;
+        
+        // First check if there are any available tables
+        const availableTable = await db.collection("table").findOne({ 
+            status: "available", 
+            belong: restaurantName 
+        });
+        
+        // If no tables are available, return 405 Method Not Allowed
+        if (!availableTable) {
+            return res.status(405).json({ message: "No tables available for check-in" });
+        }
+ 
+        // Proceed with check-in process if tables are available
+        const queuerecord = await db.collection("queue").findOne({ restaurantName: restaurantName });
         const queueExists = await db.collection("queue").updateOne(
             {
                 "queueArray": {
                     $elemMatch: { customerId: customerId }
                 },
-                restaurantName: req.params.name
+                restaurantName: restaurantName
             },
             {
                 $set: { "queueArray.$.checkInTime": new Date() }
             }
-        )
-        const result = queuerecord.queueArray.filter(table => table.customerId === req.params.id)
-        //update record status
-        let result2 = await db.collection("dinerecord").updateOne({ _id: new ObjectId(result[0].rid) }, { $set: { "status": "checked" } });
-        //assign table to them 
-        const table = await db.collection("table").updateOne({ status: "available", belong: req.params.name }, { $set: { "status": "in used", "rid": result[0].rid } });
+        );
+        
+        const result = queuerecord.queueArray.filter(table => table.customerId === customerId);
+        const table = await db.collection("table").updateOne(
+            { status: "available", belong: restaurantName }, 
+            { $set: { "status": "in used", "rid": result[0].rid } }
+        );
+        console.log(table);
 
-        console.log(queueExists);
+        //update record status
+        let result2 = await db.collection("dinerecord").updateOne(
+            { _id: new ObjectId(result[0].rid) }, 
+            { $set: { "status": "checked" } }
+        );
+        //assign table to them 
 
         if (queueExists.modifiedCount > 0 || table.modifiedCount > 0) {
             res.status(200).json({ message: "Customer checked in successfully" });
@@ -150,7 +168,6 @@ router.patch('/:id/:name/checkin', async function (req, res) {
         await db.client.close();
     }
 });
-
 
 
 //update the queue position 

@@ -2,6 +2,42 @@ var express = require('express');
 var router = express.Router();
 
 const { connectToDB, ObjectId } = require('../utils/db');
+/* Display all Bookings */
+/* Get Daily Customer Counts */
+router.get('/daily-customer-counts', async function (req, res) {
+    const db = await connectToDB();
+    try {
+        // Set date range for last 7 days
+        const endDate = new Date();
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - 7);
+        
+        // Aggregate daily customer counts
+        const results = await db.collection("dinerecord").aggregate([
+            {
+                $match: {
+                    "createdAt": { $gte: startDate, $lte: endDate },
+                    "status": "checked out"
+                }
+            },
+            {
+                $group: {
+                    _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+                    count: { $sum: 1 }
+                }
+            },
+            {
+                $sort: { _id: 1 }
+            }
+        ]).toArray();
+        
+        res.json(results);
+    } catch (err) {
+        res.status(400).json({ message: err.message });
+    } finally {
+        await db.client.close();
+    }
+});
 
 // Update a single record
 router.put('/:id', async function (req, res) {
