@@ -33,7 +33,7 @@ router.post('/', async (req, res) => {
             },
             {
                 role: "system",
-                content: `Here is the restaurant information: ${JSON.stringify(restaurantInfo)}.` // Include restaurant info
+                content: `Here is the restaurant information: ${JSON.stringify(restaurantInfo)}. Please provide the name of restaurant and detail of it to the user` // Include restaurant info
             }
         ];
 
