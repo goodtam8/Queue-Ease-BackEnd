@@ -251,15 +251,11 @@ router.get('/', async function (req, res) {
     }
 });
 
-const { ObjectId } = require('mongodb');
 
 router.delete('/:id', async function (req, res) {
     let db;
     try {
-        // Validate ObjectId
-        if (!ObjectId.isValid(req.params.id)) {
-            return res.status(400).json({ message: "Invalid restaurant ID" });
-        }
+
 
         db = await connectToDB();
 
