@@ -8,64 +8,99 @@ const admin = require('../routes/firebase');
 const axios = require('axios'); // Add this at the top
 
 
-// New restaurant
-router.post('/', passport.authenticate('bearer', { session: false }), async function (req, res) {
-    const db = await connectToDB();
-    req.body.outside = parseInt(req.body.outside) == 1;
+router.post('/',
+    passport.authenticate('bearer', { session: false }),
+    async (req, res) => {
+        let db;
+        try {
+            // Validate required fields
+            const requiredFields = ['name', 'location', 'numoftable', 'outside'];
+            const missingFields = requiredFields.filter(field => !req.body[field]);
+            if (missingFields.length > 0) {
+                return res.status(400).json({
+                    error: `Missing required fields: ${missingFields.join(', ')}`
+                });
+            }
 
-    try {
+            db = await connectToDB();
 
+            // Process boolean field
+            req.body.outside = parseInt(req.body.outside) === 1;
 
-        req.body.numoftable = parseInt(req.body.numoftable);
-        for (let i = 1; i <= parseInt(req.body.numoftable); i++) {
+            // Validate and parse table count
+            const numOfTables = parseInt(req.body.numoftable);
+            if (isNaN(numOfTables) || numOfTables < 1 || numOfTables > 50) {
+                return res.status(400).json({ error: 'Invalid table count (1-50)' });
+            }
 
-            var myobj = { table_num: i, status: "available", belong: req.body.name };
+            // Create tables in bulk
+            const tables = Array.from({ length: numOfTables }, (_, i) => ({
+                table_num: i + 1,
+                status: "available",
+                belong: req.body.name
+            }));
 
-            let result2 = await db.collection("table").insertOne(myobj);
+            await db.collection("table").insertMany(tables);
+
+            // Create historical data
+            const historicalData = {
+                belong: req.body.name,
+                ...Object.fromEntries(['1-2', '3-4', '5-6', '7+'].map((size, i) => [
+                    `${size} people`,
+                    50 + (i * 20) // Example dynamic pricing
+                ]))
+            };
+
+            await db.collection("dining").insertOne(historicalData);
+
+            // Geocoding
+            const apiKey = "AIzaSyC6obl69gbCEXgEwtskMIq66R337AOMKCY";
+            if (!apiKey) {
+                return res.status(500).json({ error: 'Server configuration error' });
+            }
+
+            const geocodeResponse = await axios.get(
+                'https://maps.googleapis.com/maps/api/geocode/json',
+                {
+                    params: {
+                        address: req.body.location,
+                        key: apiKey
+                    }
+                }
+            );
+
+            const { data } = geocodeResponse;
+            if (data.status !== 'OK' || !data.results[0]) {
+                return res.status(400).json({
+                    error: 'Location not found or invalid address'
+                });
+            }
+
+            const locationData = data.results[0];
+            req.body.lat = locationData.geometry.location.lat;
+            req.body.lng = locationData.geometry.location.lng;
+            req.body.location = locationData.formatted_address;
+
+            // Insert restaurant data
+            const result = await db.collection("restaurant").insertOne(req.body);
+
+            res.status(201).json({
+                success: true,
+                id: result.insertedId,
+                name: req.body.name,
+                location: req.body.location
+            });
+
+        } catch (err) {
+            console.error('Creation error:', err);
+            const statusCode = err.response?.status || 500;
+            const message = err.response?.data?.error || 'Internal server error';
+            res.status(statusCode).json({ error: message });
+        } finally {
+            if (db?.client) await db.client.close();
         }
-        var historicaldata = {
-            belong: req.body.name, '1-2 people': 50,
-            '3-4 people': 70,
-            '5-6 people': 90,
-            '7+ people': 100,
-        }
-        let history = await db.collection("dining").insertOne(historicaldata);
-        const address = req.body.location;
-
-        if (!address) {
-            return res.status(400).send({ error: 'Address is required' });
-        }
-
-        const apiKey = "AIzaSyC6obl69gbCEXgEwtskMIq66R337AOMKCY";
-        const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${apiKey}`;
-
-
-        const response = await axios.get(url);
-        const data = response.data;
-
-        if (data.status === 'OK') {
-            const final = data.results[0];
-
-            req.body.lat = final.geometry.location.lat;
-            req.body.lng = final.geometry.location.lng;
-            req.body.location = final.formatted_address;
-
-
-        } else {
-            res.status(404).send({ error: 'Location not found' });
-        }
-
-
-
-
-        let result = await db.collection("restaurant").insertOne(req.body);
-        res.status(201).json({ id: result.insertedId });
-    } catch (err) {
-        res.status(400).json({ message: err.message });
-    } finally {
-        await db.client.close();
     }
-});
+);
 
 /* Retrieve a single restaurant by using its name to search */
 router.get('/:name', async function (req, res) {
@@ -163,14 +198,15 @@ router.post('/send', async function (req, res) {//later add more logic here
     }
 });
 
-// Update a single restaurant
 router.put('/:id', async function (req, res) {
     const db = await connectToDB();
     try {
         let resu = await db.collection("restaurant").findOne({ _id: new ObjectId(req.params.id) });
-        console.log(req.body.location)
-        const address = req.body.location;
+        if (!resu) {
+            return res.status(404).json({ message: "Restaurant not found" }); // Early exit if restaurant doesn't exist
+        }
 
+        const address = req.body.location;
         if (!address) {
             return res.status(400).send({ error: 'Address is required' });
         }
@@ -178,42 +214,34 @@ router.put('/:id', async function (req, res) {
         const apiKey = "AIzaSyC6obl69gbCEXgEwtskMIq66R337AOMKCY";
         const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${apiKey}`;
 
-
         const response = await axios.get(url);
         const data = response.data;
 
         if (data.status === 'OK') {
-            const final = data.results[0];
-
-            req.body.lat = final.geometry.location.lat;
-            req.body.lng = final.geometry.location.lng;
-            req.body.location = final.formatted_address;
-
-
+            const result = data.results[0]; // Access first result
+            req.body.lat = result.geometry.location.lat;
+            req.body.lng = result.geometry.location.lng;
+            req.body.location = result.formatted_address;
         } else {
-            res.status(404).send({ error: 'Location not found' });
+            return res.status(404).send({ error: 'Location not found' }); // Added return
         }
 
-        delete req.body._id
+        delete req.body._id;
         req.body.outside = parseInt(req.body.outside) == 1;
-        // number of table should be disable to update for now 
         req.body.numoftable = resu.numoftable;
 
+        let result = await db.collection("restaurant").updateOne(
+            { _id: new ObjectId(req.params.id) },
+            { $set: req.body }
+        );
 
-        let result = await db.collection("restaurant").updateOne({ _id: new ObjectId(req.params.id) }, { $set: req.body });
-
-        if (result.modifiedCount > 0) {
-            res.status(200).json({ message: "Restaurant updated" });
-        } else {
-            res.status(404).json({ message: "Restaurant not found" });
-        }
+        res.status(200).json({ message: "Restaurant updated" }); // Single success response
     } catch (err) {
         res.status(400).json({ message: err.message });
     } finally {
         await db.client.close();
     }
 });
-
 
 
 //get all the course without pagination 
