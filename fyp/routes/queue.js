@@ -97,6 +97,38 @@ router.get('/:id/verify', async function (req, res) {
         await db.client.close();
     }
 });
+
+// get back the customer take queue in the restuarant 
+router.get('/:id/search/:restid/pay', async function (req, res) {
+    const db = await connectToDB();
+    //error:input must be a 24 character hex string, 12 byte Uint8Array, or an integer
+    try {
+        console.log(req.params.name)
+        const customerId = req.params.id;
+        let result3 = await db.collection("restaurant").findOne({ _id: new ObjectId(req.params.restid) });
+        // Query the database to check if the customerId exists in the queueArray
+        const queueExists = await db.collection("queue").findOne({
+            "restaurantName": result3.name,
+            "queueArray": {
+                $elemMatch: { customerId: customerId }
+            }
+        });
+
+        if (queueExists) {
+            const foundTableByName = queueExists.queueArray.find(customer => customer.customerId === customerId);
+
+            return res.status(200).json(foundTableByName.rid); // Return true if a queue exists
+        } else {
+            return res.status(404).json({ exists: "Not found" }); // Return false if no queue exists
+        }
+    } catch (err) {
+        console.log(err.message);
+        res.status(400).json({ message: err.message });
+    } finally {
+        await db.client.close();
+    }
+});
+
 // get back the customer take queue in the restuarant 
 router.get('/:id/search/:name', async function (req, res) {
     const db = await connectToDB();
