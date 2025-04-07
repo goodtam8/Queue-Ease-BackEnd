@@ -41,7 +41,7 @@ router.get('/:name/check/:customerId', async function (req, res) {
         // Check if the customer exists in the queue
         const customerExists = queue.queueArray.some(customer => customer.customerId === customerId);
         if (customerExists) {
-            return res.status(200).json({ message: "Customer exists in the queue", exists: true });
+            return res.status(200).json({ message: "Customer is already in the queue", exists: true });
         } else {
             return res.status(200).json({ message: "Customer does not exist in the queue", exists: false });
         }
