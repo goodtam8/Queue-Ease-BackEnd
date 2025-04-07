@@ -301,8 +301,6 @@ router.get('/', async function (req, res) {
 router.delete('/:id', async function (req, res) {
     let db;
     try {
-
-
         db = await connectToDB();
 
         // Find the restaurant
@@ -314,11 +312,14 @@ router.delete('/:id', async function (req, res) {
         // Delete related tables
         await db.collection("table").deleteMany({ belong: restaurant.name });
 
+        // Delete related dining records (NEW ADDITION)
+        await db.collection("dining").deleteMany({ belong: restaurant.name });
+
         // Delete the restaurant
         const deleteResult = await db.collection("restaurant").deleteOne({ _id: new ObjectId(req.params.id) });
 
         if (deleteResult.deletedCount > 0) {
-            res.status(200).json({ message: "Restaurant deleted" });
+            res.status(200).json({ message: "Restaurant and all related data deleted" });
         } else {
             res.status(404).json({ message: "Restaurant not found" });
         }
@@ -330,5 +331,6 @@ router.delete('/:id', async function (req, res) {
         }
     }
 });
+
 
 module.exports = router;
