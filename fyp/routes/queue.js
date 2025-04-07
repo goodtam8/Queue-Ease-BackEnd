@@ -100,9 +100,11 @@ router.get('/:id/verify', async function (req, res) {
 // get back the customer take queue in the restuarant 
 router.get('/:id/search/:name', async function (req, res) {
     const db = await connectToDB();
+    //error:input must be a 24 character hex string, 12 byte Uint8Array, or an integer
     try {
+        console.log(req.params.name)
         const customerId = req.params.id;
-        let result3 = await db.collection("restaurant").findOne({ _id: new ObjectId(req.params.name) });
+        let result3 = await db.collection("restaurant").findOne({ name: req.params.name });
         // Query the database to check if the customerId exists in the queueArray
         const queueExists = await db.collection("queue").findOne({
             "restaurantName": result3.name,
@@ -119,6 +121,7 @@ router.get('/:id/search/:name', async function (req, res) {
             return res.status(404).json({ exists: "Not found" }); // Return false if no queue exists
         }
     } catch (err) {
+        console.log(err.message);
         res.status(400).json({ message: err.message });
     } finally {
         await db.client.close();
@@ -392,7 +395,7 @@ router.put('/:name/add', async function (req, res) {
     const db = await connectToDB();
     try {
         const name = req.params.name; // Get the queue ID from the URL parameters
-        let { customerId, numberOfPeople, rid } = req.body; // Get customer details from the request body
+        let { customerId, numberOfPeople, rid, children } = req.body; // Get customer details from the request body
         customerId = customerId.toString();
 
 
@@ -416,7 +419,8 @@ router.put('/:name/add', async function (req, res) {
             customerId,
             numberOfPeople,
             queueNumber,
-            rid
+            rid,
+            children
         };
 
         // Update the queue by adding the new customer to the queueArray
@@ -427,6 +431,7 @@ router.put('/:name/add', async function (req, res) {
 
         res.status(200).json({ message: "Customer added to the queue successfully" });
     } catch (err) {
+        console.log(err.message);
         res.status(400).json({ message: err.message });
     } finally {
         await db.client.close();

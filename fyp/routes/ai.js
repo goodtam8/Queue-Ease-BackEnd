@@ -106,6 +106,7 @@ router.post('/analysis', async (req, res) => {
 router.post('/predict', async (req, res) => {
     try {
         const { features } = req.body;
+        console.log("Received features:", features);
         
         // Validate input
         if (!features || !Array.isArray(features) || features.length !== 5) {
@@ -123,6 +124,8 @@ router.post('/predict', async (req, res) => {
                 message: 'All features must be valid numbers' 
             });
         }
+        console.log("Numeric features:", numericFeatures);
+
         
         // Get prediction
         const waitingTime = await predictWaitingTime(numericFeatures);
