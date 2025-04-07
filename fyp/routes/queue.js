@@ -25,6 +25,32 @@ router.post('/', async function (req, res) {
         await db.client.close();
     }
 });
+// Check if the customer exists in the queue
+router.get('/:name/check/:customerId', async function (req, res) {
+    const db = await connectToDB();
+    try {
+        const name = req.params.name; // Get the restaurant name from the URL parameters
+        const customerId = req.params.customerId.toString(); // Get the customer ID from the URL parameters
+
+        // Get the current queue for the restaurant
+        const queue = await db.collection("queue").findOne({ restaurantName: name });
+        if (!queue) {
+            return res.status(404).json({ message: "Queue not found" });
+        }
+
+        // Check if the customer exists in the queue
+        const customerExists = queue.queueArray.some(customer => customer.customerId === customerId);
+        if (customerExists) {
+            return res.status(200).json({ message: "Customer exists in the queue", exists: true });
+        } else {
+            return res.status(200).json({ message: "Customer does not exist in the queue", exists: false });
+        }
+    } catch (err) {
+        res.status(400).json({ message: err.message });
+    } finally {
+        await db.client.close();
+    }
+});
 
 //get a singlequeue using restaurant name 
 router.get('/:name', async function (req, res) {
@@ -76,7 +102,7 @@ router.get('/:id/search/:name', async function (req, res) {
     const db = await connectToDB();
     try {
         const customerId = req.params.id;
-        let result3 = await db.collection("restaurant").findOne({ _id: new ObjectId(req.params.name)});
+        let result3 = await db.collection("restaurant").findOne({ _id: new ObjectId(req.params.name) });
         // Query the database to check if the customerId exists in the queueArray
         const queueExists = await db.collection("queue").findOne({
             "restaurantName": result3.name,
@@ -117,18 +143,18 @@ router.patch('/:id/:name/checkin', async function (req, res) {
     try {
         const customerId = req.params.id;
         const restaurantName = req.params.name;
-        
+
         // First check if there are any available tables
-        const availableTable = await db.collection("table").findOne({ 
-            status: "available", 
-            belong: restaurantName 
+        const availableTable = await db.collection("table").findOne({
+            status: "available",
+            belong: restaurantName
         });
-        
+
         // If no tables are available, return 405 Method Not Allowed
         if (!availableTable) {
             return res.status(405).json({ message: "No tables available for check-in" });
         }
- 
+
         // Proceed with check-in process if tables are available
         const queuerecord = await db.collection("queue").findOne({ restaurantName: restaurantName });
         const queueExists = await db.collection("queue").updateOne(
@@ -142,17 +168,17 @@ router.patch('/:id/:name/checkin', async function (req, res) {
                 $set: { "queueArray.$.checkInTime": new Date() }
             }
         );
-        
+
         const result = queuerecord.queueArray.filter(table => table.customerId === customerId);
         const table = await db.collection("table").updateOne(
-            { status: "available", belong: restaurantName }, 
+            { status: "available", belong: restaurantName },
             { $set: { "status": "in used", "rid": result[0].rid } }
         );
         console.log(table);
 
         //update record status
         let result2 = await db.collection("dinerecord").updateOne(
-            { _id: new ObjectId(result[0].rid) }, 
+            { _id: new ObjectId(result[0].rid) },
             { $set: { "status": "checked" } }
         );
         //assign table to them 
@@ -360,6 +386,7 @@ router.delete('/:id', async function (req, res) {
         await db.client.close();
     }
 });
+
 // Join the queue
 router.put('/:name/add', async function (req, res) {
     const db = await connectToDB();
@@ -414,7 +441,7 @@ router.delete('/:name/leave/:customerId', async function (req, res) {
 
         // Find the queue for the restaurant
         const queue = await db.collection("queue").findOne({ restaurantName: name });
-        
+
         if (!queue) {
             return res.status(404).json({ message: "Queue not found" });
         }
