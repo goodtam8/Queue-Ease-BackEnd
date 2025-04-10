@@ -231,170 +231,97 @@ router.patch('/:id/:name/checkin', async function (req, res) {
 });
 
 
-//update the queue position 
 router.put('/:id', async function (req, res) {
     const db = await connectToDB();
     try {
-        const queueId = req.params.id; // Get the queue ID from the URL parameters
-        const newPosition = req.body.currentPosition; // Get the new position from the request body
-        let queuenum = await db.collection("queue").findOne({ _id: new ObjectId(req.params.id) });
-        if (queuenum.queueArray.length < newPosition) {
-            return res.status(407).json({ message: "You have update the queue number exceed the limit" });
-
+        const queueId = req.params.id;
+        const newPosition = req.body.currentPosition;
+        
+        // Initial validation
+        let queueData = await db.collection("queue").findOne({ _id: new ObjectId(req.params.id) });
+        if (!queueData || queueData.queueArray.length < newPosition) {
+            return res.status(407).json({ message: "You have updated the queue number exceeding the limit" });
         }
-
-
 
         // Update the queue's current position
         const result = await db.collection("queue").updateOne(
-            { _id: new ObjectId(queueId) }, // Filter by queue ID
-            { $set: { currentPosition: newPosition } } // Update the current position
+            { _id: new ObjectId(queueId) },
+            { $set: { currentPosition: newPosition } }
         );
 
         if (result.modifiedCount === 0) {
             return res.status(404).json({ message: "Queue not found or position unchanged" });
         }
-        //find the db to in customer using the queue array index  to get the customer id when getting device token 
-        //send the message  using that token 
-        const queue = await db.collection("queue").findOne(
-            { _id: new ObjectId(queueId) }, // Filter by queue ID
-            // Update the current position
-        );
-        console.log(queue.queueArray[newPosition - 1].customerId)
-        const id = queue.queueArray[newPosition - 1].customerId
-        const customer = await db.collection("customer").findOne({ _id: new ObjectId(id) })
-        //add a loop
-        //if newposition+1, +2,+3,+4 <array.length, send notification
-        if (queue.queueArray.length - newPosition == 0) {//last element
-
-
+        
+        // Re-fetch the queue to get the most up-to-date data
+        const updatedQueue = await db.collection("queue").findOne({ _id: new ObjectId(queueId) });
+        
+        // Safety check if queue structure has changed
+        if (newPosition > updatedQueue.queueArray.length) {
+            return res.status(400).json({ message: "Queue position is no longer valid" });
         }
-        else if (queue.queueArray.length - newPosition == 1) {
-            const othercustomer = await db.collection("customer").findOne({ _id: queue.queueArray[newPosition].customerId })
-
-            const messagesend = {
-                token: othercustomer.fcm,
-                notification: {
-                    title: `Queue message from ${queue.restaurantName}`,
-                    body: "Next table is you . Please come to us for check in "
-                },
-                data: {
-                    key1: "value1",
-                    key2: "value2"
-                },
-                android: {
-                    priority: "high"
-                },
-                apns: {
-                    payload: {
-                        aps: {
-                            badge: 42
-                        }
-                    }
-                }
-            };
-
-
-            const response = await admin.messaging().send(messagesend);
-        }
-        else if (queue.queueArray.length - newPosition == 2) {
-            const count = 0
-
-            for (let i = queue.queueArray[newPosition]; i < queue.queueArray.length; i++) {
-                const othercustomer = await db.collection("customer").findOne({ _id: queue.queueArray[i].customerId })
-
-                if (count === 2) {
-                    break;
-                }
+        
+        // Notify current customer
+        if (newPosition > 0 && newPosition <= updatedQueue.queueArray.length) {
+            const currentCustomerId = updatedQueue.queueArray[newPosition - 1].customerId;
+            const currentCustomer = await db.collection("customer").findOne({ _id: new ObjectId(currentCustomerId) });
+            
+            if (currentCustomer && currentCustomer.fcm) {
                 const messagesend = {
-                    token: othercustomer.fcm,
+                    token: currentCustomer.fcm,
                     notification: {
-                        title: `Queue message from ${queue.restaurantName}`,
-                        body: "Next two table is you . Please come to us for check in "
+                        title: `Queue message from ${updatedQueue.restaurantName}`,
+                        body: "It is your turn now. Please come to us for check in "
                     },
-                    data: {
-                        key1: "value1",
-                        key2: "value2"
-                    },
-                    android: {
-                        priority: "high"
-                    },
-                    apns: {
-                        payload: {
-                            aps: {
-                                badge: 42
-                            }
-                        }
-                    }
+                    data: { key1: "value1", key2: "value2" },
+                    android: { priority: "high" },
+                    apns: { payload: { aps: { badge: 42 } } }
                 };
-
-
-                const response = await admin.messaging().send(messagesend);
-                count++
-
+                
+                await admin.messaging().send(messagesend);
             }
-        }
-        else if (queue.queueArray.length - newPosition == 3) {
-
-            const count = 0;
-            for (let i = queue.queueArray[newPosition]; i < queue.queueArray.length; i++) {
-                const othercustomer = await db.collection("customer").findOne({ _id: queue.queueArray[i].customerId })
-
-                if (count === 3) {
-                    break;
+            
+            // Notify upcoming customers
+            const remainingLength = updatedQueue.queueArray.length - newPosition;
+            
+            if (remainingLength > 0) {
+                // Determine how many customers to notify (1, 2, or 3)
+                const notifyCount = Math.min(remainingLength, 3);
+                let notificationBody = "";
+                
+                switch (notifyCount) {
+                    case 1: notificationBody = "Next table is you. Please come to us for check in"; break;
+                    case 2: notificationBody = "Next two tables is you. Please come to us for check in"; break;
+                    case 3: notificationBody = "Next three tables is you. Please come to us for check in"; break;
                 }
-                const messagesend = {
-                    token: othercustomer.fcm,
-                    notification: {
-                        title: `Queue message from ${queue.restaurantName}`,
-                        body: "Next three table is you . Please come to us for check in"
-                    },
-                    data: {
-                        key1: "value1",
-                        key2: "value2"
-                    },
-                    android: {
-                        priority: "high"
-                    },
-                    apns: {
-                        payload: {
-                            aps: {
-                                badge: 42
-                            }
+                
+                // Notify the upcoming customers
+                for (let i = 0; i < notifyCount; i++) {
+                    const upcomingIndex = newPosition + i;
+                    
+                    // Verify index is valid before accessing
+                    if (upcomingIndex < updatedQueue.queueArray.length) {
+                        const upcomingCustomerId = updatedQueue.queueArray[upcomingIndex].customerId;
+                        const upcomingCustomer = await db.collection("customer").findOne({ _id: new ObjectId(upcomingCustomerId) });
+                        
+                        if (upcomingCustomer && upcomingCustomer.fcm) {
+                            const messagesend = {
+                                token: upcomingCustomer.fcm,
+                                notification: {
+                                    title: `Queue message from ${updatedQueue.restaurantName}`,
+                                    body: notificationBody
+                                },
+                                data: { key1: "value1", key2: "value2" },
+                                android: { priority: "high" },
+                                apns: { payload: { aps: { badge: 42 } } }
+                            };
+                            
+                            await admin.messaging().send(messagesend);
                         }
-                    }
-                };
-
-
-                const response = await admin.messaging().send(messagesend);
-                count++;
-                console.log(i);
-            }
-        }
-        const messagesend = {
-            token: customer.fcm,
-            notification: {
-                title: `Queue message from ${queue.restaurantName}`,
-                body: "It is your turn now. Please come to us for check in "
-            },
-            data: {
-                key1: "value1",
-                key2: "value2"
-            },
-            android: {
-                priority: "high"
-            },
-            apns: {
-                payload: {
-                    aps: {
-                        badge: 42
                     }
                 }
             }
-        };
-
-
-        const response = await admin.messaging().send(messagesend);
+        }
 
         res.status(200).json({ message: "Queue position updated successfully" });
     } catch (err) {
@@ -403,6 +330,7 @@ router.put('/:id', async function (req, res) {
         await db.client.close();
     }
 });
+
 router.delete('/:id', async function (req, res) {
     const db = await connectToDB();
     try {
