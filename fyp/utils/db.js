@@ -1,6 +1,7 @@
 const { MongoClient, ObjectId } = require('mongodb');
+require('dotenv').config();
 
-process.env.MONGODB_URI = 'mongodb://goodtam30:Vn3NXA0E48XGafDC6WLtqGXixg8MGXL9DfjAk3mTa8hqDuW3BRKaKoj3AHwXTl8CShhhJ6Ek4N53ACDbh3QXhw==@goodtam30.mongo.cosmos.azure.com:10255/?ssl=true&retrywrites=false&replicaSet=globaldb&maxIdleTimeMS=120000&appName=@goodtam30@';
+process.env.MONGODB_URI = process.env.MONGODB_URI;
 
 if (!process.env.MONGODB_URI) {
     // throw new Error('Please define the MONGODB_URI environment variable inside .env.local');
