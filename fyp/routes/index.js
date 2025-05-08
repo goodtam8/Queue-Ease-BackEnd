@@ -4,7 +4,7 @@ const { connectToDB, ObjectId } = require('../utils/db');
 const { generateToken } = require('../utils/auth');
 const multer = require('multer');
 const admin = require('./firebase'); // Import the initialized Firebase Admin SDK
-
+require('dotenv').config();
 const upload = multer({ dest: 'uploads/' }); // This will save uploaded files to an 'uploads' directory
 
 /* GET home page. */
@@ -135,8 +135,8 @@ router.post('/geocode', async (req, res) => {
     return res.status(400).send({ error: 'Address is required' });
   }
 
-  const apiKey = "AIzaSyC6obl69gbCEXgEwtskMIq66R337AOMKCY";
-  const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${apiKey}`;
+  const apiKey = process.env.GOOGLE_API_KEY;
+    const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${apiKey}`;
 
   try {
     const response = await axios.get(url);
