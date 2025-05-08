@@ -7,6 +7,7 @@ const admin = require('../routes/firebase');
 
 const axios = require('axios'); // Add this at the top
 
+require('dotenv').config();
 
 router.post('/',
     passport.authenticate('bearer', { session: false }),
@@ -54,7 +55,7 @@ router.post('/',
             await db.collection("dining").insertOne(historicalData);
 
             // Geocoding
-            const apiKey = "AIzaSyC6obl69gbCEXgEwtskMIq66R337AOMKCY";
+            const apiKey = process.env.GOOGLE_API_KEY;
             if (!apiKey) {
                 return res.status(500).json({ error: 'Server configuration error' });
             }
